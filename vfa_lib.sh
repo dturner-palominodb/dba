@@ -8,7 +8,8 @@
 # whatever the administrator has set up while the interaction with the shell
 # is consistent across hosts. This should greatly enhance DBAs' productivity.
 #
-#   
+# Download this file from
+# wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/vfa_lib.sh
 #
 # Suggested setup: in your/root's .bashrc add
 #
