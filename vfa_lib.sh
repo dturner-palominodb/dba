@@ -6,7 +6,7 @@
 # similar to the suggestions in OFA, optimal flexible architecture introduced
 # by Cary Milsap at Oracle. The virtual is used because the layout can be 
 # whatever the administrator has set up while the interaction with the shell
-# is consistent across hosts. This should greatly enhance DBAs' productivity.
+# is consistent across hosts. This should greatly enhance a DBA's productivity.
 #
 # Download this file from
 # wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/vfa_lib.sh
@@ -201,15 +201,40 @@ function skip_slave {
   fi
 }
 
+function show_slaves {
+  stmt="show processlist"
+  filter="grep | bleh"
+
+  if [ -z $1 ];then
+    conn $default_inst_port "$stmt"
+  else
+    conn $1 "$stmt"
+  fi
+
+
+}
+
 function show_global_status {
-  conn $1 'show global status'
+  stmt="show global status"
+
+  if [ -z $1 ];then
+    conn $default_inst_port "$stmt"
+  else
+    conn $1 "$stmt"
+  fi
 
 }
 
 alias v_sgs="show_global_status"
 
 function show_global_variables {
-  conn $1 "show global variables"
+  stmt="show global variables"
+  if [ -z $1 ];then
+    conn $default_inst_port "$stmt"
+  else
+    conn $1 "$stmt"
+  fi
+
 
 }
 
@@ -217,16 +242,103 @@ alias v_sgv="show_global_variables"
 
 
 function show_my_cnf {
-  echo
+  if [ -z $1 ];then
+    grep -v "#" ${vfatab_file} |grep $default_inst_port |cut -d: -f1
 
+  else
+    grep -v "#" ${vfatab_file} |grep $1 |cut -d: -f1
+
+  fi
 }
 
 alias v_smc="show_my_cnf"
+
+function show_my_cnfs {
+    grep -v "#" ${vfatab_file} |cut -d: -f1
+
+}
+
+
+
 
 # Function needs to be actually written. Laine gave me this and it works well.
 function get_binlog_summary {
   echo
   # mysqlbinlog mysql-bin.009254 | egrep "^INSERT|^REPLACE|^UPDATE" | sed -e 's/LOW_PRIORITY//' | awk '{print $1 " " $2 " " $3}' | sort | uniq -c | sort > /tmp/mysql-bin.009254.out 
+
+}
+
+# Show the ports available on a host
+function show_ports {
+  grep -v "#" ${vfatab_file} |cut -d: -f2
+
+}
+
+# Show the sockets available on a host
+function show_sockets {
+ 
+  for cnf in `grep -v "#" ${vfatab_file} |cut -d: -f1`
+  do 
+    grep socket ${cnf} |sort -u |awk '{print $3}'
+  done
+
+}
+
+function show_error_log {
+  if [ -z $1 ];then
+    show_global_variables $default_inst_port |grep log_err |awk '{print $2}'
+  else
+    show_global_variables $1 |grep log_err |awk '{print $2}'
+  fi
+}
+
+alias show_errorlog="show_error_log"
+
+function show_error_logs {
+  for port in `show_ports`
+  do 
+    show_global_variables $port |grep log_err |awk '{print $2}'
+  done
+
+}
+
+function show_binlog_dir {
+# under construction
+  if [ -z $1 ];then
+    egrep log-bin `show_my_cnf $default_inst_port` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+  else
+    egrep log-bin `show_my_cnf $1` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+  fi
+}
+
+function show_binlog_dirs {
+  for port in `show_ports`
+  do
+    egrep log-bin `show_my_cnf $port` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+  done
+}
+
+function show_slow_log {
+# under construction
+  if [ -z $1 ];then
+    egrep log-slow-queries  `show_my_cnf $default_inst_port` |awk '{print $3}'
+  else
+    egrep log-slow-queries  `show_my_cnf $1` |awk '{print $3}'
+  fi
+}
+
+function show_slow_logs {
+  for port in `show_ports`
+  do
+    egrep log-slow-queries  `show_my_cnf $port` |awk '{print $3}'
+  done
+}
+
+
+
+function show_functions {
+  egrep "^function " ${vfa_script_root}/admin/scripts/vfa_lib.sh | \
+    grep -v private_ | cut -d" " -f2
 
 }
 
