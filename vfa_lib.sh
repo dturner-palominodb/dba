@@ -104,6 +104,19 @@ function set_inst_info {
 
 }
 
+function get_latest_vfa_lib {
+  vfa_script_dir="${vfa_script_root}/admin/scripts}"
+
+  cp ${vfa_script_dir}/vfa_lib.sh /tmp/bak.vfa_lib.sh
+
+  wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/vfa_lib.sh
+
+  if [ `pwd` != "${vfa_script_dir}" ];then
+    cp vfa_lib.sh ${vfa_script_dir}/
+  fi
+
+}
+
 # get the socket based off the port passed
 function get_socket {
   if [ -z $1 ];then
