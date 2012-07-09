@@ -206,6 +206,24 @@ function show_slave_status {
 } 
 alias v_s3=show_slave_status
 
+function show_processlist {
+    if [ -z $1 ];then
+      conn $default_inst_port "show processlist"
+    else 
+      conn $1 "show processlist"
+    fi
+
+}
+
+function show_full_processlist {
+    if [ -z $1 ];then
+      conn $default_inst_port "show full processlist"
+    else
+      conn $1 "show full processlist"
+    fi
+
+}
+
 function skip_slave {
   if [ -z $1 ];then
     conn $default_inst_port "SET GLOBAL SQL_SLAVE_SKIP_COUNTER=1; START SLAVE"
