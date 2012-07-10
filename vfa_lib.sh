@@ -17,6 +17,8 @@
 #   alias dba="source ${home_dir}/palominodb/admin/scripts/vfa_lib.sh"
 #   dba
 #
+# vfa_script_root is changing to /usr/local/palominodb
+#
 #
 # Requirements:
 #   /etc/vfatab
