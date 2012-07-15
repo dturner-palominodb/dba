@@ -12,7 +12,8 @@ tar rvf ${tarball} \
 functions \
 mysqld \
 network \
-vfa_lib.sh 
+vfa_lib.sh \
+install_perf_tarball.sh
 
 gzip ${tarball}
 
