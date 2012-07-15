@@ -13,11 +13,8 @@
 #
 # Suggested setup: in your/root's .bashrc add
 #
-#   home_dir=`ls -d ~`
-#   alias dba="source ${home_dir}/palominodb/admin/scripts/vfa_lib.sh"
+#   alias dba="source /usr/local/palominodb/scripts/vfa_lib.sh"
 #   dba
-#
-# vfa_script_root is changing to /usr/local/palominodb
 #
 #
 # Requirements:
@@ -52,9 +49,9 @@ function private_setup_vfa {
   # for all the running mysqld processes and creates a vfatab.cnf
   # if it doesn't already exist.
 
-  mkdir -p ${home_dir}/palominodb/admin/ddl
-  mkdir -p ${home_dir}/palominodb/admin/scripts
-  mkdir -p ${home_dir}/palominodb/admin/sql
+  mkdir -p ${HOME}/palominodb/admin/ddl
+  mkdir -p ${HOME}/palominodb/admin/scripts
+  mkdir -p ${HOME}/palominodb/admin/sql
 
   private_create_vfatab
 
@@ -78,6 +75,19 @@ function private_create_vfatab {
 
 }
 
+# This function borrowed from centos based mysqld script
+# extract value of a MySQL option from config files
+# Usage: get_mysql_option SECTION VARNAME DEFAULT
+# result is returned in $result
+# We use my_print_defaults which prints all options from multiple files,
+# with the more specific ones later; hence take the last match.
+get_mysql_option(){
+        result=`/usr/bin/my_print_defaults --defaults-file=$(show_my_cnf ${interim_port}) "$1" | sed -n "s/^--$2=//p" | tail -n 1`
+        if [ -z "$result" ]; then
+            # not found, use default
+            result="$3"
+        fi
+}
 
 # Check if port info was passed to this script if not then set 
 # port returned to 3306
@@ -136,20 +146,6 @@ function get_socket {
   else
     grep ^socket ${inst_vfa_cnf} | head -1|awk -F= '{print $2}'|sed "s/ //g"
   fi
-
-}
-
-function call_read_ini {
-  if [ -z $1 ];then
-    echo "Error: usage $0 [port]"
-    return 1
-  else 
-    inst_port=$1
-  fi
-
-  set_inst_info ${inst_port}
-
-  read_ini ${inst_vfa_cnf} mysqld 
 
 }
 
@@ -383,11 +379,10 @@ function show_functions {
 #       is the default instance to log into on the given host
 #
 
-home_dir=`ls -d ~`
 # This allows for an override of the vfatab. Often useful
 # for hosts with restricted access.
-if [ -f ${home_dir}/vfatab ];then
-  vfatab_file=${home_dir}/vfatab
+if [ -f ${HOME}/vfatab ];then
+  vfatab_file=${HOME}/vfatab
 
 elif [ -f /tmp/vfatab ];then
   vfatab_file=/tmp/vfatab
@@ -401,30 +396,19 @@ else
 
 fi
 
-if [ -d ${home_dir}/palominodb ];then
-  vfa_script_root="${home_dir}/palominodb"
-  read_ini_file=${home_dir}/palominodb/admin/scripts/read_ini.sh
+if [ -d /usr/local/palominodb/scripts ];then
+  vfa_script_root="/usr/local/palominodb/scripts"
 else
-  echo "Error: unable to find ${home_dir}/palominodb"
+  echo "Error: unable to find /usr/local/palominodb/scripts" 
   return 1
 fi
 
-alias v_scripts="cd ${vfa_script_root}/admin/scripts"
-alias v_sql="cd ${vfa_script_root}/admin/sql"
-alias v_ddl="cd ${vfa_script_root}/admin/ddl"
+# With new root need to rethink this. Commenting out for now
+# alias v_scripts="cd ${vfa_script_root}/admin/scripts"
+# alias v_sql="cd ${vfa_script_root}/admin/sql"
+# alias v_ddl="cd ${vfa_script_root}/admin/ddl"
 
 unset default_inst_port
-
-
-# Load read_ini function
-# DEBUG before checking in determine how to set location for 
-# this script. 
-if [ -f ${read_ini_file} ];then 
-  source ${home_dir}/palominodb/admin/scripts/read_ini.sh
-else
-  echo "Error: cannot find ${read_ini_file}"
-  return 1
-fi
 
 # if no port info passed default to 3306
 default_inst_port=$(get_port $1)
@@ -450,39 +434,33 @@ export PS1="[\u@\h:${default_inst_port} \w]#"
 # [root@blade01-05 scripts]#
 # export PS1="\w \u\$"
 
-# Set my.cnf variables
-# Note there is a bug preventing variable that have hyphens from
-# being read. Skipping issue until I have time to fix.
-read_ini ${default_inst_vfa_cnf} mysqld 
-
-# DEBUG
-# echo "INI__mysqld__socket=$INI__mysqld__socket"
-# set |grep INI
-
-default_inst_socket=${INI__mysqld__socket}
+interim_port=${inst_port}
+get_mysql_option mysqld socket 
+default_inst_socket="$result"
 
 # Temporary until script figures out 
 # user and password
 default_inst_admin_user=root
 default_inst_admin_pass=""
 
-# Need to fix read_ini to handle hyphens..
-function vfa_logdir {
-  if [ -z $1 ];then
-    call_read_ini ${default_inst_port}
-    echo ${INI__mysqld__socket}
-    echo ${INI__mysqld__slow_query_log_file}
-    echo ${INI__mysqld__log_error}
-    echo Use default
-  else
-    call_read_ini ${1}
-    echo ${INI__mysqld__socket}
-    echo Use $1
-  fi
- 
-  env
+# UNDER CONSTRUCTION. REMOVE INI__, deprecated
+# function vfa_logdir {
+#   if [ -z $1 ];then
+#     call_read_ini ${default_inst_port}
+#     echo ${INI__mysqld__socket}
+#     echo ${INI__mysqld__slow_query_log_file}
+#     echo ${INI__mysqld__log_error}
+#     echo Use default
+#   else
+#     call_read_ini ${1}
+#     echo ${INI__mysqld__socket}
+#     echo Use $1
+#   fi
+#  
+#   env
+# 
+# }
 
-}
 
 # conn - a function to log into instances for the most part without a password
 
@@ -514,10 +492,10 @@ function conn {
     if [[ $1 =~ ^localhost:33[0-9][0-9]$ ]];then
       inst_host=`echo $1 | awk -F: '{print $1}'` 
       inst_port=`echo $1 | awk -F: '{print $2}'` 
-      call_read_ini ${inst_port}
-      inst_socket=${INI__mysqld__socket}
-      # DEBUG - old
-      # inst_socket=$(get_socket ${inst_port}) 
+
+      interim_port=${inst_port}
+      get_mysql_option mysqld socket 
+      inst_socket="$result"
 
     elif [[ $1 =~ ^localhost$ ]];then
       inst_host="localhost"
@@ -532,10 +510,11 @@ function conn {
     elif [[ $1 =~ ^33[0-9][0-9]$ ]];then
       inst_host="localhost"
       inst_port=$1
-      call_read_ini ${inst_port}
-      inst_socket=${INI__mysqld__socket}
-      # DEBUG - old method
-      # inst_socket=$(get_socket ${inst_port}) 
+
+      interim_port=${inst_port}
+      get_mysql_option mysqld socket 
+      inst_socket="$result"
+
     # Assume $1 is the hostname to connect to
     else
       inst_host="$1"
