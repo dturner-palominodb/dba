@@ -1,1 +1,29 @@
 DBA related scripts for managing client infrastructure
+
+Installation instructions:
+
+o Run create_perf_tarball.sh from git/dba.
+
+  It will create /tmp/perf_tarball.tgz which
+  can be copied to any host.
+
+o Copy the file to dest_host:/tmp
+
+o On the dest host open the tar file and run
+  install_perf_tarball.sh.
+
+  cd /tmp
+  tar xzvf perf_tarball.tgz
+  cd perf_tarball
+  ./install_perf_tarball.sh
+
+o Source the vfa_lib.sh script
+
+  source /usr/local/palominodb/scripts/vfa_lib.sh
+
+o Update /etc/vfatab to have the correct location for all my.cnf files
+ 
+  ie: /etc/my.cnf:3306:Y:Y    
+  (Location of my.cnf : the port : Whether to autostart : Whether it should be default instance to connect to)
+
+

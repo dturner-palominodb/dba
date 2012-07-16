@@ -366,7 +366,7 @@ function show_slow_logs {
 
 
 function show_functions {
-  egrep "^function " ${vfa_script_root}/admin/scripts/vfa_lib.sh | \
+  egrep "^function " ${vfa_script_root}/vfa_lib.sh | \
     grep -v private_ | cut -d" " -f2
 
 }
