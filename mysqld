@@ -13,23 +13,25 @@ echo "\$1=$1"
 echo "\$2=$2"
 
 ACTION=$1
+.  /usr/local/palominodb/scripts/vfa_lib.sh ""
 
 if [ ! -z $2 ];then
   echo "Assigning to port=>$2<"
-  PORT=$2
-  .  /root/palominodb/admin/scripts/vfa_lib.sh ${PORT}
+  port_list=($2)
+  # PORT=$2
 else
-  .  /root/palominodb/admin/scripts/vfa_lib.sh ""
+  port_list=( $(show_ports |grep 330[7-8]) )
+  # PORT=3307
 fi
 
 # Library that helps identify location of various database files.
 
 # Source function library.
-.  /root/palominodb/admin/scripts/files/functions
+.  /usr/local/palominodb/scripts/functions
 # . /etc/rc.d/init.d/functions
 
 # Source networking configuration.
-.  /root/palominodb/admin/scripts/files/network
+.  /usr/local/palominodb/scripts/network
 # . /etc/sysconfig/network
 
 
@@ -41,7 +43,7 @@ prog="MySQL"
 # We use my_print_defaults which prints all options from multiple files,
 # with the more specific ones later; hence take the last match.
 get_mysql_option(){
-	result=`/usr/bin/my_print_defaults --defaults-file=$(show_my_cnf ${PORT}) "$1" | sed -n "s/^--$2=//p" | tail -n 1`
+	result=`/usr/bin/my_print_defaults --defaults-file=$(show_my_cnf $4) "$1" | sed -n "s/^--$2=//p" | tail -n 1`
 	# result=`/usr/bin/my_print_defaults --defaults-file=/etc/mysql/my-3306.cnf "$1" | sed -n "s/^--$2=//p" | tail -n 1`
 	if [ -z "$result" ]; then
 	    # not found, use default
@@ -49,18 +51,34 @@ get_mysql_option(){
 	fi
 }
 
-get_mysql_option mysqld datadir "/var/lib/mysql"
-datadir="$result"
-echo datadir="$result"
-get_mysql_option mysqld socket "$datadir/mysql.sock"
-socketfile="$result"
-echo socketfile="$result"
-get_mysql_option mysqld_safe log-error "/var/log/mysqld.log"
-errlogfile="$result"
-echo errlogfile="$result"
-get_mysql_option mysqld_safe pid-file "/var/run/mysqld/mysqld.pid"
-mypidfile="$result"
-echo mypidfile="$result"
+
+set_vars(){
+
+  get_mysql_option mysqld datadir "/var/lib/mysql" $1
+  datadir="$result"
+  echo datadir="$result"
+  get_mysql_option mysqld socket "$datadir/mysql.sock" $1
+  socketfile="$result"
+  echo socketfile="$result"
+  
+  get_mysql_option mysqld_safe log-error '' $1
+  if [ -z $result ];then
+    get_mysql_option mysqld log-error "/var/log/mysqld.log" $1
+  fi
+  errlogfile="$result"
+  echo errlogfile="$result"
+  
+  get_mysql_option mysqld_safe pid-file '' $1
+  if [ -z $result ];then
+    get_mysql_option mysqld pid-file "/var/run/mysqld/mysqld.pid" $1
+  fi
+  mypidfile="$result"
+  echo mypidfile="$result"
+
+}
+
+
+
 
 start(){
 	touch "$errlogfile"
@@ -80,9 +98,9 @@ start(){
 	# Pass all the options determined above, to ensure consistent behavior.
 	# In many cases mysqld_safe would arrive at the same conclusions anyway
 	# but we need to be sure.
-echo "PORT=${PORT}"
+echo "port=${port}"
 	/usr/bin/mysqld_safe   --datadir="$datadir" --socket="$socketfile" \
-		--port=${PORT} --log-error="$errlogfile" --pid-file="$mypidfile" \
+		--port=${port} --log-error="$errlogfile" --pid-file="$mypidfile" \
 		>/dev/null 2>&1 &
 	ret=$?
 	# Spin for a maximum of N seconds waiting for the server to come up.
@@ -112,7 +130,7 @@ echo "PORT=${PORT}"
           mkdir /var/lock/subsys
         fi
 
-	[ $ret -eq 0 ] && touch /var/lock/subsys/mysqld-${PORT}
+	[ $ret -eq 0 ] && touch /var/lock/subsys/mysqld-${port}
 	return $ret
 }
 
@@ -133,7 +151,7 @@ stop(){
                     ret=1
                     action $"Stopping $prog: " /bin/false
                 else
-                    rm -f /var/lock/subsys/mysqld-${PORT}
+                    rm -f /var/lock/subsys/mysqld-${port}
                     rm -f "$socketfile"
                     action $"Stopping $prog: " /bin/true
                 fi
@@ -153,11 +171,12 @@ restart(){
 }
 
 condrestart(){
-    [ -e /var/lock/subsys/mysqld-${PORT} ] && restart || :
+    [ -e /var/lock/subsys/mysqld-${port} ] && restart || :
 }
 
+main(){
 # See how we were called.
-case "$ACTION" in
+case "$1" in
   start)
     start
     ;;
@@ -175,7 +194,18 @@ case "$ACTION" in
     ;;
   *)
     echo $"Usage: $0 {start|stop|status|condrestart|restart}"
-    exit 1
+    return 1
 esac
+}
 
-exit $?
+for port in ${port_list[@]}
+do
+  set_vars ${port}
+  main ${ACTION}
+  if [ $? -eq 1 ];then
+    break
+    exit 1
+  fi
+
+done
+
