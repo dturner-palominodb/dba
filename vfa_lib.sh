@@ -303,6 +303,11 @@ function show_ports {
 
 }
 
+function show_managed_instances {
+  grep -i ":Y:" ${vfatab_file} |grep -v "#" |cut -d: -f2
+
+}
+
 # Show the sockets available on a host
 function show_sockets {
  
