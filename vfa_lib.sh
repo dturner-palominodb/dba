@@ -82,22 +82,52 @@ function private_create_vfatab {
 # We use my_print_defaults which prints all options from multiple files,
 # with the more specific ones later; hence take the last match.
 get_mysql_option(){
-        result=`/usr/bin/my_print_defaults --defaults-file=$(show_my_cnf ${interim_port}) "$1" | sed -n "s/^--$2=//p" | tail -n 1`
+  conf_file=`show_my_cnf ${interim_port}`
+  if [ -e $conf_file ];then
+        result=`/usr/bin/my_print_defaults --defaults-file=$conf_file "$1" | sed -n "s/^--$2=//p" | tail -n 1`
         if [ -z "$result" ]; then
             # not found, use default
             result="$3"
         fi
+   else
+     echo "Error: $conf_file for port does not exist."
+# DEBUG
+# Bug. Need to set prompt back to default after this. Othewise it will be wrong.
+     return 1
+   fi
 }
 
-# Check if port info was passed to this script if not then set 
-# port returned to 3306
+# Get the default port if none is specified. Otherwise just set to
+# what the user passed.
 function get_port {
-  if [ -z $1 ];then 
-    echo 3306
+  if [ -z $1 ];then
+    port_list=( `grep -i ":Y$" ${vfatab_file} |grep -v "#" |cut -d: -f2` )
+  
+    # Default to port 3306 if not set in vfatab.
+    if [ ${#port_list[@]} -eq 0 ];then
+      echo 3306
+    elif [ ${#port_list[@]} -eq 1 ];then
+      echo "${port_list[0]}"
+    else
+      echo "Error: more than one instance is set as the default."
+      return 1
+    fi
   else
     echo $1
   fi
+
 }
+
+# REPLACED
+# Check if port info was passed to this script if not then set 
+# port returned to 3306
+# function get_port {
+#   if [ -z $1 ];then 
+#     echo 3306
+#   else
+#     echo $1
+#   fi
+# }
 
 # The values in this case are not returned but just set as globals.
 # I don't like it so if you have ideas on how to clean up great!!
@@ -288,8 +318,6 @@ function show_my_cnfs {
 }
 
 
-
-
 # Function needs to be actually written. Laine gave me this and it works well.
 function get_binlog_summary {
   echo
@@ -303,6 +331,9 @@ function show_ports {
 
 }
 
+
+# The third field in vfatab specifies whether the port should
+# be managed by this script.
 function show_managed_ports {
   grep -i ":Y:" ${vfatab_file} |grep -v "#" |cut -d: -f2
 
@@ -416,6 +447,7 @@ fi
 unset default_inst_port
 
 # if no port info passed default to 3306
+# trying to get it to work with a default set in vfatab as well.
 default_inst_port=$(get_port $1)
 default_inst_info=`grep -v "^#" ${vfatab_file} |grep ${default_inst_port}`
 
@@ -426,9 +458,9 @@ if [ -z $default_inst_info ];then
   unset default_inst_admin_pass
   unset default_inst_port
   unset default_inst_socket
-  # alias conn="echo \"Error: try calling vfa_lib.sh again.\""
   return 1
 fi
+
 
 default_inst_auto_start=`echo ${default_inst_info} | awk -F: '{print $3}'`
 default_inst_vfa_cnf=`echo ${default_inst_info} | awk -F: '{print $1}'`
