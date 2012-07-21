@@ -303,7 +303,7 @@ function show_ports {
 
 }
 
-function show_managed_instances {
+function show_managed_ports {
   grep -i ":Y:" ${vfatab_file} |grep -v "#" |cut -d: -f2
 
 }
