@@ -9,29 +9,29 @@
 # config: /etc/my.cnf
 # pidfile: /var/run/mysqld/mysqld.pid
 
-echo "\$1=$1"
-echo "\$2=$2"
 
-ACTION=$1
+request=$1
 .  /usr/local/palominodb/scripts/vfa_lib.sh ""
 
 if [ ! -z $2 ];then
   echo "Assigning to port=>$2<"
   port_list=($2)
-  # PORT=$2
 else
-  port_list=( $(show_ports |grep 330[7-8]) )
-  # PORT=3307
+  port_list=( $(show_managed_ports) )
 fi
 
 # Library that helps identify location of various database files.
 
 # Source function library.
 .  /usr/local/palominodb/scripts/functions
+# Original call to functions used by this script. Had to modify
+# to work with both Centos and Ubuntu
 # . /etc/rc.d/init.d/functions
 
 # Source networking configuration.
 .  /usr/local/palominodb/scripts/network
+# Original call to network used by this script. Had to modify
+# to work with both Centos and Ubuntu
 # . /etc/sysconfig/network
 
 
@@ -44,7 +44,6 @@ prog="MySQL"
 # with the more specific ones later; hence take the last match.
 get_mysql_option(){
 	result=`/usr/bin/my_print_defaults --defaults-file=$(show_my_cnf $4) "$1" | sed -n "s/^--$2=//p" | tail -n 1`
-	# result=`/usr/bin/my_print_defaults --defaults-file=/etc/mysql/my-3306.cnf "$1" | sed -n "s/^--$2=//p" | tail -n 1`
 	if [ -z "$result" ]; then
 	    # not found, use default
 	    result="$3"
@@ -56,29 +55,23 @@ set_vars(){
 
   get_mysql_option mysqld datadir "/var/lib/mysql" $1
   datadir="$result"
-  echo datadir="$result"
+
   get_mysql_option mysqld socket "$datadir/mysql.sock" $1
   socketfile="$result"
-  echo socketfile="$result"
   
   get_mysql_option mysqld_safe log-error '' $1
   if [ -z $result ];then
     get_mysql_option mysqld log-error "/var/log/mysqld.log" $1
   fi
   errlogfile="$result"
-  echo errlogfile="$result"
   
   get_mysql_option mysqld_safe pid-file '' $1
   if [ -z $result ];then
     get_mysql_option mysqld pid-file "/var/run/mysqld/mysqld.pid" $1
   fi
   mypidfile="$result"
-  echo mypidfile="$result"
 
 }
-
-
-
 
 start(){
 	touch "$errlogfile"
@@ -98,7 +91,6 @@ start(){
 	# Pass all the options determined above, to ensure consistent behavior.
 	# In many cases mysqld_safe would arrive at the same conclusions anyway
 	# but we need to be sure.
-echo "port=${port}"
 	/usr/bin/mysqld_safe   --datadir="$datadir" --socket="$socketfile" \
 		--port=${port} --log-error="$errlogfile" --pid-file="$mypidfile" \
 		>/dev/null 2>&1 &
@@ -107,23 +99,25 @@ echo "port=${port}"
 	# Rather than assuming we know a valid username, accept an "access
 	# denied" response as meaning the server is functioning.
 	if [ $ret -eq 0 ]; then
+            # May want to bump on some systems to 300
 	    STARTTIMEOUT=30
 	    while [ $STARTTIMEOUT -gt 0 ]; do
-		echo "DEBUG: /usr/bin/mysqladmin --socket="$socketfile" --user=UNKNOWN_MYSQL_USER ping"
+		echo -n "."
 		RESPONSE=`/usr/bin/mysqladmin --socket="$socketfile" --user=UNKNOWN_MYSQL_USER ping 2>&1` && break
 		echo "$RESPONSE" | grep -q "Access denied for user" && break
 		sleep 1
 		let STARTTIMEOUT=${STARTTIMEOUT}-1
 	    done
+            echo
 	    if [ $STARTTIMEOUT -eq 0 ]; then
                     echo "Timeout error occurred trying to start MySQL Daemon."
-                    action $"Starting $prog: " /bin/false
+                    action $"Starting $prog on ${port}: " /bin/false
                     ret=1
             else
-                    action $"Starting $prog: " /bin/true
+                    action $"Starting $prog on ${port}: " /bin/true
             fi
 	else
-    	    action $"Starting $prog: " /bin/false
+    	    action $"Starting $prog on ${port}: " /bin/false
 	fi
 
         if [ ! -d /var/lock/subsys ];then
@@ -142,25 +136,27 @@ stop(){
             if [ $ret -eq 0 ]; then
                 STOPTIMEOUT=60
                 while [ $STOPTIMEOUT -gt 0 ]; do
+		    echo -n "."
                     /bin/kill -0 "$MYSQLPID" >/dev/null 2>&1 || break
                     sleep 1
                     let STOPTIMEOUT=${STOPTIMEOUT}-1
                 done
+                echo
                 if [ $STOPTIMEOUT -eq 0 ]; then
                     echo "Timeout error occurred trying to stop MySQL Daemon."
                     ret=1
-                    action $"Stopping $prog: " /bin/false
+                    action $"Stopping $prog on ${port}: " /bin/false
                 else
                     rm -f /var/lock/subsys/mysqld-${port}
                     rm -f "$socketfile"
-                    action $"Stopping $prog: " /bin/true
+                    action $"Stopping $prog on ${port}: " /bin/true
                 fi
             else
-                action $"Stopping $prog: " /bin/false
+                action $"Stopping $prog on ${port}: " /bin/false
             fi
         else
             ret=1
-            action $"Stopping $prog: " /bin/false
+            action $"Stopping $prog on ${port}: " /bin/false
         fi
         return $ret
 }
@@ -201,11 +197,14 @@ esac
 for port in ${port_list[@]}
 do
   set_vars ${port}
-  main ${ACTION}
-  if [ $? -eq 1 ];then
-    break
-    exit 1
-  fi
+  main ${request}
+# Talk with Moss about whether we want to do this or not.
+# I can see reasons to quit our or not. I lean to not break'ing.
+#   if [ $? -eq 1 ];then
+#     echo "DEBUG Returned $?"
+#     break
+#     exit 1
+#   fi
 
 done
 
