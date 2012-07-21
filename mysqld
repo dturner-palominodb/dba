@@ -14,7 +14,6 @@ request=$1
 .  /usr/local/palominodb/scripts/vfa_lib.sh ""
 
 if [ ! -z $2 ];then
-  echo "Assigning to port=>$2<"
   port_list=($2)
 else
   port_list=( $(show_managed_ports) )
