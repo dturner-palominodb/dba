@@ -189,7 +189,7 @@ load_tables() {
     echo
   fi
 
-  echo "${schema} completed in ${total_time} minutes"
+  Completed in ${total_time} minutes"
 
 }
 
