@@ -90,7 +90,8 @@ start(){
 	# Pass all the options determined above, to ensure consistent behavior.
 	# In many cases mysqld_safe would arrive at the same conclusions anyway
 	# but we need to be sure.
-	/usr/bin/mysqld_safe   --datadir="$datadir" --socket="$socketfile" \
+        # DEBUG
+	/usr/bin/mysqld_safe   --defaults-file=$(show_my_cnf ${port}) --datadir="$datadir" --socket="$socketfile" \
 		--port=${port} --log-error="$errlogfile" --pid-file="$mypidfile" \
 		>/dev/null 2>&1 &
 	ret=$?
