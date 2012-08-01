@@ -100,7 +100,7 @@ start(){
 	# denied" response as meaning the server is functioning.
 	if [ $ret -eq 0 ]; then
             # May want to bump on some systems to 300
-	    STARTTIMEOUT=30
+	    STARTTIMEOUT=240
 	    while [ $STARTTIMEOUT -gt 0 ]; do
 		echo -n "."
 		RESPONSE=`/usr/bin/mysqladmin --socket="$socketfile" --user=UNKNOWN_MYSQL_USER ping 2>&1` && break
