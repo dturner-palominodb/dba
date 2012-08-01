@@ -32,7 +32,7 @@ do
 
   mkdir -p ${backup_dir}/${db} 2> /dev/null
   chown -R mysql:mysql ${backup_dir}
-  # Need to add and test --master-data --single-transaction . Not sure how it will work
+  # Need to add and test --master-data=2 --single-transaction . Not sure how it will work
   # since we're running it per schema.
   mysqldump -h localhost -u root --socket=/data/mysql/m${port}/logs/mysql.sock \
             --default-character-set=latin1 -q -Q \
