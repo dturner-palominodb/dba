@@ -234,6 +234,32 @@ function loud_exec {
   VFA_LIB_SILENT=0
 }
 
+function show_db_size {
+    if [ -z $1 ];then
+      conn $default_inst_port "select round(sum(data_length)/1024/1024) as data_mb, round(sum(index_length)/1024/1024) as index_mb, \
+                                      round(sum(data_length)/1024/1024) + round(sum(index_length)/1024/1024) as total_mb \
+                               from information_schema.tables"
+    else
+      conn $1                 "select round(sum(data_length)/1024/1024) as data_mb, round(sum(index_length)/1024/1024) as index_mb, \
+                                      round(sum(data_length)/1024/1024) + round(sum(index_length)/1024/1024) as total_mb \
+                               from information_schema.tables"
+    fi
+
+}
+
+function show_db_sizes {
+    if [ -z $1 ];then
+      conn $default_inst_port "select table_schema, round(sum(data_length)/1024/1024) as data_mb, round(sum(index_length)/1024/1024) as index_mb, \
+                                                    round(sum(data_length)/1024/1024) + round(sum(index_length)/1024/1024) as total_mb \
+                               from information_schema.tables group by table_schema"
+    else
+      conn $1                 "select table_schema, round(sum(data_length)/1024/1024) as data_mb, round(sum(index_length)/1024/1024) as index_mb, \
+                                                    round(sum(data_length)/1024/1024) + round(sum(index_length)/1024/1024) as total_mb \
+                               from information_schema.tables group by table_schema"
+    fi
+
+}
+
 function show_slave_status {
     if [ -z $1 ];then
       conn $default_inst_port "show slave status\G"
