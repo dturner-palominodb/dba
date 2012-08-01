@@ -27,8 +27,9 @@ fi
 # to work with both Centos and Ubuntu
 # . /etc/rc.d/init.d/functions
 
+# Deprecated
 # Source networking configuration.
-.  /usr/local/palominodb/scripts/network
+# .  /usr/local/palominodb/scripts/network
 # Original call to network used by this script. Had to modify
 # to work with both Centos and Ubuntu
 # . /etc/sysconfig/network
