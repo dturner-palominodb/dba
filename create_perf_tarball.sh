@@ -10,11 +10,14 @@ cp call_pt-stalk.sh    ${tarball_dir}
 cp gen_stalk_report.sh ${tarball_dir}
 
 cd ${HOME}/git/dba/
-cp functions               ${tarball_dir}
-cp mysqld                  ${tarball_dir}
-cp network                 ${tarball_dir}
-cp vfa_lib.sh              ${tarball_dir}
-cp install_perf_tarball.sh ${tarball_dir}
+cp functions                  ${tarball_dir}
+cp mysqld                     ${tarball_dir}
+cp network                    ${tarball_dir}
+cp vfa_lib.sh                 ${tarball_dir}
+cp install_perf_tarball.sh    ${tarball_dir}
+cp pdb_checksum_to_file.sh    ${tarball_dir}
+cp pdb_dump.sh                ${tarball_dir}
+cp pdb_set_long_query_time.sh ${tarball_dir}
 
 cd /tmp
 tar czvf ${tarball_file} perf_tarball
