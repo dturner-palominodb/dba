@@ -31,3 +31,9 @@ o Update /etc/vfatab to have the correct location for all my.cnf files
   # often this will work
   for conf in `ls /etc/mysql/my-*33*.cnf |sort`; do echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-m//;s/.cnf//"):Y:N;done > /etc/vfatab
 
+o If you want to use the multi instance managing mysqld script do the following
+
+  mv /etc/init.d/mysql /etc/init.d/original.mysql  2> /dev/null;mv /etc/init.d/mysqld /etc/init.d/original.mysqld 2> /dev/null
+
+  ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysql;ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysqld 
+
