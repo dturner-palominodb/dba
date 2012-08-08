@@ -12,7 +12,6 @@ cp gen_stalk_report.sh ${tarball_dir}
 cd ${HOME}/git/dba/
 cp functions                  ${tarball_dir}
 cp mysqld                     ${tarball_dir}
-cp network                    ${tarball_dir}
 cp vfa_lib.sh                 ${tarball_dir}
 cp install_perf_tarball.sh    ${tarball_dir}
 cp pdb_checksum_to_file.sh    ${tarball_dir}
