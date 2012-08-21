@@ -25,5 +25,16 @@ do
 done > ${mysql_conf_dir}/vfatab
 ln -s ${mysql_conf_dir}/vfatab /etc/vfatab
 
+if [ -e /etc/init.d/mysql ];then
+  mv /etc/init.d/mysql /etc/init.d/mysql.old
+fi
+
+if [ -e /etc/init.d/mysqld ];then
+  mv /etc/init.d/mysqld /etc/init.d/mysqld.old
+fi
+
+ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysql
+ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysqld
+
 
 echo "Install complete."
