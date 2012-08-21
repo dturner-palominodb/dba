@@ -1,8 +1,7 @@
 #!/bin/bash
 
 dest_dir=/usr/local/palominodb/scripts
-tarball=/tmp/perf_tarball.tar
-tarball_dir=/tmp/perf_tarball
+tarball_dir=`pwd`
 mysql_conf_dir=/etc/mysql
 
 mkdir -p ${dest_dir} 2> /dev/null
