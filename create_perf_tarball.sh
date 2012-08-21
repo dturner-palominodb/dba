@@ -1,7 +1,7 @@
 #!/bin/bash
 
 tarball_dir=/tmp/perf_tarball
-date=`date +"%Y%m%d%H%M%S"
+date=`date +"%Y%m%d%H%M%S"`
 tarball_file=perf_tarball_${date}.tgz
 
 mkdir -p /tmp/perf_tarball 2> /dev/null
