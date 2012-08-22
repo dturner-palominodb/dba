@@ -17,23 +17,29 @@ o On the dest host open the tar file and run
   cd perf_tarball
   ./install_perf_tarball.sh
 
-o Source the vfa_lib.sh script
+o Test that the script is working, type dba. This will source the vfa_lib.sh script.
+  Your prompt should change. IE
 
-  source /usr/local/palominodb/scripts/vfa_lib.sh
 
-o Update /etc/vfatab to have the correct location for all my.cnf files
+o Files of interest
+
+  /etc/vfatab
+  
+  The contents of the above file should resemble the following if you have multiple instances. Otherwise,
+  only one line for 3306
  
-  ie: /etc/my.cnf:3306:Y:Y    
-  (Location of my.cnf : the port : Whether to autostart : Whether it should be default instance to connect to)
+  /etc/my-3306.cnf:3306:Y:Y    
+  /etc/my-3307.cnf:3307:Y:N    
+  /etc/my-3310.cnf:3310:Y:N    
 
-  or
+o /etc/init.d/mysql
+  /etc/init.d/mysqld
 
-  # often this will work
-  for conf in `ls /etc/mysql/my-*33*.cnf |sort`; do echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-m//;s/.cnf//"):Y:N;done > /etc/vfatab
+  Both are symlinks to /usr/local/palominodb/scripts/mysqld. This is a modified mysqld script that is used to work
+  with multiple database instances. By default it will start or stop all instances. However, if a port is passed 
+  it will start or stop the individual instance.
 
-o If you want to use the multi instance managing mysqld script do the following
+  /etc/init.d/mysql start 3307
 
-  mv /etc/init.d/mysql /etc/init.d/original.mysql  2> /dev/null;mv /etc/init.d/mysqld /etc/init.d/original.mysqld 2> /dev/null
 
-  ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysql;ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysqld 
 
