@@ -2,12 +2,24 @@ DBA related scripts for managing client infrastructure
 
 Installation instructions:
 
-o Run create_perf_tarball.sh from git/dba.
+o To get this repo without a key from github run the following:
 
+  ssh <username>@host
+  mkdir git
+  cd git
+  git clone https://github.com/dturner-palominodb/dba.git
+
+
+o Run create_perf_tarball.sh from git/dba.
   It will create /tmp/perf_tarball.tgz which
   can be copied to any host.
 
-o Copy the file to dest_host:/tmp
+  cd ~/git/dba
+  ./create_perf_tarball.sh
+
+o Copy the file to db dest_host:/tmp
+
+  scp /tmp/perf_tarball_20120820043003.tgz <hostname>:/tmp
 
 o On the dest host open the tar file and run
   install_perf_tarball.sh.
