@@ -32,6 +32,8 @@ o On the dest host open the tar file and run
 o Test that the script is working, type dba. This will source the vfa_lib.sh script.
   Your prompt should change. IE
 
+  [dturner@host02-01 ~]$ dba
+  [dturner@host02-01:3306 ~]#
 
 o Files of interest
 
