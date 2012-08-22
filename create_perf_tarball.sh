@@ -6,9 +6,10 @@ tarball_file=perf_tarball_${date}.tgz
 
 mkdir -p /tmp/perf_tarball 2> /dev/null
 
-cd ${HOME}/git/ServerAudit/scripts/
-cp call_pt-stalk.sh    ${tarball_dir}
-cp gen_stalk_report.sh ${tarball_dir}
+# Deprecated. Removing after there is a replacement
+# cd ${HOME}/git/ServerAudit/scripts/
+# cp call_pt-stalk.sh    ${tarball_dir}
+# cp gen_stalk_report.sh ${tarball_dir}
 
 cd ${HOME}/git/dba/
 cp functions                  ${tarball_dir}
