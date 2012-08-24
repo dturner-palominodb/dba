@@ -29,18 +29,13 @@ if [ -z $1 ];then
   exit 1
 else
  pct_allowed=`echo $1 | sed s/%//g`
+ port=$2
 
-fi
-
-if [ -z $2 ];then
-  port=3306
-else
-  port=$2
 fi
 
 if [ -e ${vfa_lib_file} ];then
   source ${vfa_lib_file} ''
-  socket_info="--socket=$(get_socket ${port})"
+  socket_info="--socket=$(get_socket ${port:=3306})"
 else
   socket_info=""  
 fi
