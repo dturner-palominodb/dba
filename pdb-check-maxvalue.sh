@@ -135,7 +135,7 @@ select
     ELSE
       'failed'
   END),
-  ' * 100) > 0 ',
+  ' * 100) > ${pct_allowed} ',
   ';')
 from 
   information_schema.columns 
