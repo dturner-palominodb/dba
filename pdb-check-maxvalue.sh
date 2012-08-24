@@ -1,10 +1,15 @@
 #!/bin/bash
 # author: dturner@palominodb.com
 # file: pdb-check-maxvalue.sh
-# purpose: check all int columns and if the max value in that column is greater than
-#          N pct allowed print that column to stdout.
-# repo: https://github.com/dturner-palominodb/dba
+# purpose: check for max values in all columns of integer types that have
+#          reached N pct of the maximum value for that type of integer.
 #
+# repo: https://github.com/dturner-palominodb/dba
+# 
+#       To download just this file do the following:
+#       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
+#
+
 
 vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
 
