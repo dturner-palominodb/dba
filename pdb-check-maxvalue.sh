@@ -9,6 +9,16 @@
 #       To download just this file do the following:
 #       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
 #
+# phase II features:
+#                   config file  : many options would be good to have as options in a config file
+#
+#                   store history: the values returned tell us a lot about the growth rate of certain columns.
+# 
+#                   exlusion list: there will be some columns that clients don't care about.
+#
+#                   integrate with nagios: we need all clients informed when max values will be reached for their columns
+#
+
 
 
 vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
