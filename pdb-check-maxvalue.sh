@@ -53,25 +53,25 @@ select
   (CASE
       1
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\)$'          THEN ~0 >> 57 #tiny   int signed
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 56 #tiny   int unsigned
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\)$'          THEN ~0 >> 49 #small  int signed
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 48 #small  int unsigned
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\)$'          THEN ~0 >> 41 #medium int signed
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 40 #medium int unsigned
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\)$'          THEN ~0 >> 33 #       int signed
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\) unsigned$' THEN ~0 >> 32 #       int unsigned
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\)$'          THEN ~0 >>  1 #big    int signed
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\) unsigned$' THEN ~0       #big    int unsigned
     ELSE
       'failed'
   END),
@@ -80,25 +80,25 @@ select
   (CASE
       1
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\)$'          THEN ~0 >> 57 #tiny   int signed
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 56 #tiny   int unsigned
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\)$'          THEN ~0 >> 49 #small  int signed
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 48 #small  int unsigned
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\)$'          THEN ~0 >> 41 #medium int signed
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 40 #medium int unsigned
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\)$'          THEN ~0 >> 33 #       int signed
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\) unsigned$' THEN ~0 >> 32 #       int unsigned
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\)$'          THEN ~0 >>  1 #big    int signed
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\) unsigned$' THEN ~0       #big    int unsigned
     ELSE
       'failed'
   END),
@@ -108,25 +108,25 @@ select
   (CASE
       1
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\)$'          THEN ~0 >> 57 #tiny   int signed
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
+      replace(column_type,' zerofill','') regexp '^tinyint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 56 #tiny   int unsigned
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\)$'          THEN ~0 >> 49 #small  int signed
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
+      replace(column_type,' zerofill','') regexp '^smallint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 48 #small  int unsigned
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\)$'          THEN ~0 >> 41 #medium int signed
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
+      replace(column_type,' zerofill','') regexp '^mediumint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 40 #medium int unsigned
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\)$'          THEN ~0 >> 33 #       int signed
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
+      replace(column_type,' zerofill','') regexp '^int\\\([0-9]*\\\) unsigned$' THEN ~0 >> 32 #       int unsigned
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\)$'          THEN ~0 >>  1 #big    int signed
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
+      replace(column_type,' zerofill','') regexp '^bigint\\\([0-9]*\\\) unsigned$' THEN ~0       #big    int unsigned
     ELSE
       'failed'
   END),
