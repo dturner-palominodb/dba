@@ -19,6 +19,7 @@ cp install_perf_tarball.sh    ${tarball_dir}
 cp pdb_checksum_to_file.sh    ${tarball_dir}
 cp pdb_dump.sh                ${tarball_dir}
 cp pdb_set_long_query_time.sh ${tarball_dir}
+cp pdb-check-maxvalue.sh      ${tarball_dir}
 
 cd /tmp
 tar czvf ${tarball_file} perf_tarball
