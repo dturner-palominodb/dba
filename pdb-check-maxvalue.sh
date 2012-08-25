@@ -1,10 +1,25 @@
 #!/bin/bash
 # author: dturner@palominodb.com
 # file: pdb-check-maxvalue.sh
-# purpose: check all int columns and if the max value in that column is greater than
-#          N pct allowed print that column to stdout.
-# repo: https://github.com/dturner-palominodb/dba
+# purpose: check for max values in all columns of integer types that have
+#          reached N pct of the maximum value for that type of integer.
 #
+# repo: https://github.com/dturner-palominodb/dba
+# 
+#       To download just this file do the following:
+#       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
+#
+# phase II features:
+#                   config file  : many options would be good to have as options in a config file
+#
+#                   store history: the values returned tell us a lot about the growth rate of certain columns.
+# 
+#                   exlusion list: there will be some columns that clients don't care about.
+#
+#                   integrate with nagios: we need all clients informed when max values will be reached for their columns
+#
+
+
 
 vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
 
@@ -14,20 +29,13 @@ if [ -z $1 ];then
   exit 1
 else
  pct_allowed=`echo $1 | sed s/%//g`
- echo "pct_allowed=${pct_allowed}"
-fi
-echo "2=$2"
-if [ -z $2 ];then
-  port=3306
-else
-  port=$2
-fi
+ port=$2
 
-echo port=$port
+fi
 
 if [ -e ${vfa_lib_file} ];then
   source ${vfa_lib_file} ''
-  socket_info="--socket=$(get_socket ${port})"
+  socket_info="--socket=$(get_socket ${port:=3306})"
 else
   socket_info=""  
 fi
@@ -45,70 +53,97 @@ select
   (CASE
       1
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\)$'          THEN ~0 >> 57 #tiny   int signed
+      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 56 #tiny   int unsigned
+      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\)$'          THEN ~0 >> 49 #small  int signed
+      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 48 #small  int unsigned
+      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\)$'          THEN ~0 >> 41 #medium int signed
+      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 40 #medium int unsigned
+      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\)$'          THEN ~0 >> 33 #       int signed
+      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\) unsigned$' THEN ~0 >> 32 #       int unsigned
+      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\)$'          THEN ~0 >>  1 #big    int signed
+      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\) unsigned$' THEN ~0       #big    int unsigned
+      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
     ELSE
       'failed'
   END),
-  ' * 100 )) as PCT_USED from \`', table_schema, '\`.\`', table_name, '\` '
+  ' * 100 )', 
+  ', round(ifnull(max(\`', column_name, '\`),0)),',
+  (CASE
+      1
+    WHEN
+      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
+    WHEN
+      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
+    WHEN
+      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
+    WHEN
+      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
+    WHEN
+      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
+    WHEN
+      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
+    WHEN
+      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
+    WHEN
+      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
+    WHEN
+      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
+    WHEN
+      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
+    ELSE
+      'failed'
+  END),
+  ') as INFO ',
+  'from \`', table_schema, '\`.\`', table_name, '\` '
   'having round(ifnull(max(\`', column_name, '\`),0) / ',
   (CASE
       1
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\)$'          THEN ~0 >> 57 #tiny   int signed
+      column_type regexp '^tinyint\\\([0-9]*\\\)'          THEN ~0 >> 57 #tiny   int signed
     WHEN
-      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 56 #tiny   int unsigned
+      column_type regexp '^tinyint\\\([0-9]*\\\) unsigned' THEN ~0 >> 56 #tiny   int unsigned
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\)$'          THEN ~0 >> 49 #small  int signed
+      column_type regexp '^smallint\\\([0-9]*\\\)'          THEN ~0 >> 49 #small  int signed
     WHEN
-      column_type regexp '^smallint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 48 #small  int unsigned
+      column_type regexp '^smallint\\\([0-9]*\\\) unsigned' THEN ~0 >> 48 #small  int unsigned
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\)$'          THEN ~0 >> 41 #medium int signed
+      column_type regexp '^mediumint\\\([0-9]*\\\)'          THEN ~0 >> 41 #medium int signed
     WHEN
-      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned$' THEN ~0 >> 40 #medium int unsigned
+      column_type regexp '^mediumint\\\([0-9]*\\\) unsigned' THEN ~0 >> 40 #medium int unsigned
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\)$'          THEN ~0 >> 33 #       int signed
+      column_type regexp '^int\\\([0-9]*\\\)'          THEN ~0 >> 33 #       int signed
     WHEN
-      column_type regexp '^int\\\([0-9]*\\\) unsigned$' THEN ~0 >> 32 #       int unsigned
+      column_type regexp '^int\\\([0-9]*\\\) unsigned' THEN ~0 >> 32 #       int unsigned
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\)$'          THEN ~0 >>  1 #big    int signed
+      column_type regexp '^bigint\\\([0-9]*\\\)'          THEN ~0 >>  1 #big    int signed
     WHEN
-      column_type regexp '^bigint\\\([0-9]*\\\) unsigned$' THEN ~0       #big    int unsigned
+      column_type regexp '^bigint\\\([0-9]*\\\) unsigned' THEN ~0       #big    int unsigned
     ELSE
       'failed'
   END),
-  ' * 100) > 0 ',
+  ' * 100) > ${pct_allowed} ',
   ';')
 from 
   information_schema.columns 
 where 
   # data_type in ('tinyint')
   data_type in ('tinyint','smallint','mediumint','int','integer','bigint')
-and 
-  table_schema not in ('blah');
+and
+  table_schema not in ('VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
+  # table_schema not in ('mysql','information_schema','VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
 
 EOF
 
-echo "set @myvar='this works';" > ${proc_file}
-
-mysql -sN ${socket_info} < ${sql_file} >> ${proc_file}
+mysql -sN ${socket_info} < ${sql_file} > ${proc_file}
 
 # For debugging
 # cat ${proc_file}
