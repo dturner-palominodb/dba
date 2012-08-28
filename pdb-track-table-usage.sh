@@ -40,7 +40,7 @@ do
   FROM
     information_schema.table_statistics
   WHERE
-    table_schema='receiving'
+    table_schema not in ('information_schema','mysql')
   "
 
   for result in `mysql --socket=$(get_socket ${port}) -sNe "$stmt"`
