@@ -536,9 +536,19 @@ default_inst_admin_pass=""
 # 
 # }
 
+function convert_array_to_in_list() {
+# A script that's useful for converting lists/arrays
+# to sql in lists
+# 
+# example array for testing:
+# table_list=( `echo "a b c d"` ) 
+
+  echo $@ | sed "s/^/('/;s/ /','/g;s/$/')/"
+
+}
+
 
 # conn - a function to log into instances for the most part without a password
-
 function conn {
 
   # localhost        - connect to localhost via default socket
