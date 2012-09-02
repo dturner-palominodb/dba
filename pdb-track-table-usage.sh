@@ -6,6 +6,11 @@
 # features: should add a conf file with items like exlusion lists and something
 #           the works with regexp so it excludes types of tables as well.
 #
+# repo: https://github.com/dturner-palominodb/dba
+# 
+#       To download just this file do the following:
+#       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
+#
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
 
