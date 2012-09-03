@@ -2,14 +2,11 @@
 # author: dturner
 # filename: pdb-track-table-usage.sh
 # purpose: logs the total reads to each of the tables in all databases
-#         
+#
+# requirements: set global userstat_running=1;
+#
 # features: should add a conf file with items like exlusion lists and something
 #           the works with regexp so it excludes types of tables as well.
-#
-# repo: https://github.com/dturner-palominodb/dba
-# 
-#       To download just this file do the following:
-#       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
 #
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
@@ -31,11 +28,11 @@ for port in ${port_list}
 do
   # The query that returns table usage for the current period.
   stmt="
-  SELECT 
+  SELECT
     CONCAT_WS
     (',',
       date_format(now(),'%Y%m%d:%H%i%s'),
-      $port,
+      \"$port\",
       table_schema,
       table_name,
       rows_read,
@@ -46,15 +43,14 @@ do
     information_schema.table_statistics
   WHERE
     table_schema not in ('information_schema','mysql')
+  ORDER BY
+    table_schema, table_name
   "
 
   for result in `mysql --socket=$(get_socket ${port}) -sNe "$stmt"`
   do
     echo "$result" >> $data_file
   done
-  
+
 
 done
-
-
-
