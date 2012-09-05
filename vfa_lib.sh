@@ -385,6 +385,21 @@ function show_sockets {
 
 }
 
+# Show the datadir even if the db is down.
+function show_datadir {
+  if [ -z $1 ];then
+    show_global_variables $default_inst_port 2> /dev/null|grep datadir |awk '{print $2}'
+    if [ ${PIPESTATUS[1]} -gt 0 ];then
+      egrep datadir `show_my_cnf $default_inst_port` |awk '{print $3}'
+    fi
+  else
+    show_global_variables $1 2> /dev/null|grep datadir |awk '{print $2}'
+    if [ ${PIPESTATUS[1]} -gt 0 ];then
+      egrep datadir `show_my_cnf $1` |awk '{print $3}'
+    fi
+  fi
+}
+
 function show_error_log {
   if [ -z $1 ];then
     show_global_variables $default_inst_port |grep log_err |awk '{print $2}'
