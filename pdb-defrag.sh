@@ -24,7 +24,7 @@ fi
 
 # Debug mode just gathers stats and doesn't actually perform
 # the alters.
-debug=1
+# debug=1
 
 
 # The minimum number MB that must remain during a reorg.
