@@ -419,18 +419,17 @@ function show_error_logs {
 }
 
 function show_binlog_dir {
-# under construction
   if [ -z $1 ];then
-    egrep log-bin `show_my_cnf $default_inst_port` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+    egrep log_bin `show_my_cnf $default_inst_port`|grep -v "#" |awk '{print $3}' | sed "s/\/$//"|awk -F"/" '{gsub($NF,"");print}'
   else
-    egrep log-bin `show_my_cnf $1` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+    egrep log_bin `show_my_cnf $1` |grep -v "#"|awk '{print $3}' | sed "s/\/$//"|awk -F"/" '{gsub($NF,"");print}'
   fi
 }
 
 function show_binlog_dirs {
   for port in `show_ports`
   do
-    egrep log-bin `show_my_cnf $port` |awk '{print $3}'|awk -F/ 'sub(FS $NF,x)'
+    show_binlog_dir ${port}
   done
 }
 
