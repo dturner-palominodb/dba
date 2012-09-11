@@ -37,7 +37,7 @@ minimum_mb_fragmentation=0
 # The maximum size of table to reorg. Any large than
 # N MB should be reorged with percona's online schema change
 # script
-maximum_mb_table=15000
+maximum_mb_table=14000
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
 
@@ -185,8 +185,9 @@ function call_alter_tables() {
   echo "tail -f ${log_dir}/pdb-defrag-alters-${port}-${run_date}.log"
   echo "to see progress."
 
-  echo "Stopping replication" >> ${file}
-  stop_rep ${port}
+# DEBUG
+#  echo "Stopping replication" >> ${file}
+#  stop_rep ${port}
 
   for table_info in ${table_list}
   do
@@ -200,8 +201,9 @@ function call_alter_tables() {
 
   done
 
-  echo "Starting replication" >> ${file}
-  start_rep ${port}
+# DEBUG
+#   echo "Starting replication" >> ${file}
+#   start_rep ${port}
 }
 
 # Get the current date for gathering stats befor the reorg.
