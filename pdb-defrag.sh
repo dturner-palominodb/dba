@@ -28,7 +28,7 @@ fi
 
 
 # The minimum number MB that must remain during a reorg.
-mininum_mb_free_space=10000
+minimum_mb_free_space=10000
 
 # The minimum amount of fragmentation to perform a reorg.
 # Set to 0 to reorg all tables.
