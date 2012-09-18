@@ -4,12 +4,18 @@
 # Perform online schema change locally on a
 # given instance.
 
+# Other:
+#       You can cleanly stop the script by using 
+#       a stop file. IE: touch /tmp/pdb-local-reorg-3306.stop
+#
 
 # Features to add
 # o Check each time a table should be reorge that ther is enough space 
 #   on the filesystem
 # o Fix the parm passing below
 # o stop and start replication.
+
+
 
 # Set port to 3306 if $1 isn't passed.
 port=$1
@@ -35,10 +41,14 @@ mininum_mb_free_space=10000
 # Set to 0 to reorg all tables.
 minimum_mb_fragmentation=0
 
+# The minimum size of table to reorg. Added since we're
+# having to do these in batches.
+minimum_mb_table=10000
+
 # The maximum size of table to reorg. Any large than
 # N MB should be reorged with percona's online schema change
 # script
-maximum_mb_table=14000
+maximum_mb_table=25000
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
 
@@ -77,6 +87,8 @@ function get_fragmentation_info() {
   and
     (data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
   and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
+  and
     (data_length + index_length) / 1024 / 1024 <= ${maximum_mb_table}
   order by
     data_length + index_length asc;
@@ -111,6 +123,8 @@ function get_total_fragmentation_info() {
     engine='innodb' ${schema_condition}
   and
     (data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
+  and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
   and
     (data_length + index_length) / 1024 / 1024 <= ${maximum_mb_table}
   "
@@ -174,6 +188,8 @@ function get_table_list() {
     i.engine='innodb' ${schema_condition}
   AND
     (i.data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
+  and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
   AND
     (i.data_length + i.index_length) / 1024 / 1024 <= ${maximum_mb_table}
   AND
@@ -199,6 +215,18 @@ function start_rep() {
 
 }
 
+# Rather than killing the script it's nice to cleanly stop
+# the script
+function check_for_stop_file() {
+  stop_file=/tmp/pdb-local-reorg-${port}.stop
+
+  if [ -e ${stop_file} ];then
+    echo "Stop file found. Exiting"
+    exit 0
+  fi
+
+}
+
 function call_alter_tables() {
   port=$1
   file=${log_dir}/pdb-defrag-alters-${port}-${run_date}.log
@@ -211,6 +239,7 @@ function call_alter_tables() {
 
   for table_info in ${table_list}
   do
+    check_for_stop_file
 
     database=`echo ${table_info} |cut -d: -f1 |cut -d. -f1`
     table=`echo ${table_info} | cut -d: -f1 | cut -d. -f2`
@@ -229,9 +258,9 @@ function call_alter_tables() {
 # Get the current date for gathering stats befor the reorg.
 run_date=$(date +"%Y%m%d%H%M%S")
 
-# get_disk_stats ${port}
-# get_fragmentation_info ${port}
-# get_total_fragmentation_info ${port}
+get_disk_stats ${port}
+get_fragmentation_info ${port}
+get_total_fragmentation_info ${port}
 
 table_list=`get_table_list ${port}`
 call_alter_tables ${port}
@@ -239,9 +268,9 @@ call_alter_tables ${port}
 # Get the current date for gathering stats after the reorg.
 run_date=$(date +"%Y%m%d%H%M%S")
 
-# get_disk_stats ${port}
-# get_fragmentation_info ${port}
-# get_total_fragmentation_info ${port}
+get_disk_stats ${port}
+get_fragmentation_info ${port}
+get_total_fragmentation_info ${port}
 
 
 #   bytes_avail_datadir=`df -P -k ${datadir} |tail -1 |awk '{print $4 "* 1024"}' |bc`
