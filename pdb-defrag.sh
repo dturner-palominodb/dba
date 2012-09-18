@@ -34,10 +34,13 @@ minimum_mb_free_space=10000
 # Set to 0 to reorg all tables.
 minimum_mb_fragmentation=0
 
+# The minimum table size to reorg.
+minimum_mb_table=20000
+
 # The maximum size of table to reorg. Any large than
 # N MB should be reorged with percona's online schema change
 # script
-maximum_mb_table=14000
+maximum_mb_table=2000000
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
 
@@ -76,6 +79,8 @@ function get_fragmentation_info() {
   and
     (data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
   and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
+  and
     (data_length + index_length) / 1024 / 1024 <= ${maximum_mb_table}
   order by
     data_length + index_length asc;
@@ -110,6 +115,8 @@ function get_total_fragmentation_info() {
     engine='innodb' ${schema_condition}
   and
     (data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
+  and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
   and
     (data_length + index_length) / 1024 / 1024 <= ${maximum_mb_table}
   "
@@ -156,6 +163,8 @@ function get_table_list() {
   and
     (data_free) / 1024 / 1024 >= ${minimum_mb_fragmentation}
   and
+    (data_length + index_length) / 1024 / 1024 >= ${minimum_mb_table}
+  and
     (data_length + index_length) / 1024 / 1024 <= ${maximum_mb_table}
   order by
     data_length + index_length asc;
@@ -178,6 +187,19 @@ function start_rep() {
 
 }
 
+function check_runlog_for_table() {
+  port=$1
+  table=$2
+  runlog=/tmp/pdb-defrag-run-${port}.log
+
+  if [ -e ${runlog} ];then
+    grep -iw ${table} $runlog 2> /dev/null|wc -l
+  else
+     echo 0
+  fi
+
+}
+
 function call_alter_tables() {
   port=$1
   file=${log_dir}/pdb-defrag-alters-${port}-${run_date}.log
@@ -192,8 +214,15 @@ function call_alter_tables() {
   for table_info in ${table_list}
   do
     table=`echo ${table_info} | cut -d: -f1`
+   
+    # Check the runlog to see if the table was already reorged.
+    if [ $(check_runlog_for_table ${port} ${table}) -gt 0 ];then
+      echo "Skipping ${table}."
+      continue
+    fi
+
     engine=`echo ${table_info} | cut -d: -f7`
-    stmt="alter table ${table} engine=${engine}"
+    stmt="set sql_log_bin=0;alter table ${table} engine=${engine}"
     echo "${stmt}" >> ${file}
     if [ -z "$debug" ];then
       mysql -vvv --socket=$(get_socket $port) -sNe "$stmt" >> ${file}
