@@ -246,7 +246,7 @@ function call_alter_tables() {
     engine=`echo ${table_info} | cut -d: -f7`
 
     stmt="alter table ${table} engine=${engine}"
-    echo "${stmt}" > ${sql_file}
+    echo "${stmt}" >> ${sql_file}
 
     echo "php ${osc_file} --accept_mysql_version --dbname=${database} --ddl_file=${sql_file} --mode=statement" >> ${file}
     php ${osc_file} --accept_mysql_version --dbname=${database} --ddl_file=${sql_file} --mode=statement >> ${file} 2>&1
