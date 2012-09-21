@@ -9,12 +9,16 @@
 #       a stop file. IE: touch /tmp/pdb-local-reorg-3306.stop
 #
 
+
 # Features to add
 # o Check each time a table should be reorge that ther is enough space 
 #   on the filesystem
 # o Fix the parm passing below
 # o stop and start replication.
 
+# Links
+# FB's osc files
+# http://bazaar.launchpad.net/~mysqlatfacebook/mysqlatfacebook/tools/files/head:/osc/
 
 
 # Set port to 3306 if $1 isn't passed.
