@@ -3,47 +3,61 @@
 dest_dir=/usr/local/palominodb/scripts
 tarball_dir=`pwd`
 mysql_conf_dir=/etc/mysql
+# Change this if you have a nonstandard location for the my.cnf files.
+mysql_site_specific_conf_dir=/data/admin/conf
 
 mkdir -p ${dest_dir} 2> /dev/null
 cd ${dest_dir}
 
 cp ${tarball_dir}/* ${dest_dir}
 
-if [ `ls ${mysql_conf_dir}/my-*33*.cnf 2> /dev/null |wc -l` -lt 1 ];then
-  if [ -d /data/admin/conf/ ];then
-    mysql_conf_dir="/data/admin/conf"
+# Locations searched for
+# /data/admin/conf/my-*33*.cnf
+# /data/admin/conf/my.cnf
+# /etc/mysql/my.cnf
+# /etc/mysql/my-*33*.cnf
+# /etc/my.cnf
+
+# Pattern to find my.cnf files
+mysql_conf_regex="my-*33*.cnf"
+
+
+# /etc/mysql/my-*33*.cnf
+if [ `ls ${mysql_conf_dir}/${mysql_conf_regex} 2> /dev/null |wc -l` -lt 1 ];then
+  # /data/admin/conf
+  if [ -d ${mysql_site_specific_conf_dir} ];then
+    mysql_conf_dir=${mysql_site_specific_conf_dir}
+    # /data/admin/conf/my.cnf
+    if [ -e ${mysql_site_specific_conf_dir}/my.cnf ];then
+      mysql_conf_regex="my.cnf"
+    fi
+  # /etc/mysql/my.cnf
+  elif [ -e ${mysql_conf_dir}/my.cnf ];then
+    mysql_conf_regex="my.cnf"
+  # /etc/my.cnf
+  elif [ -e /etc/my.cnf ];then
+    mysql_conf_dir="/etc"
+    mysql_conf_regex="my.cnf"
+    
   else
     echo "Error: problem finding my.cnf files in ${mysql_conf_dir}"
     exit 1
   fi
 fi
 
-for conf in `ls ${mysql_conf_dir}/my-*33*.cnf |sort`
+for conf in `ls ${mysql_conf_dir}/${mysql_conf_regex} |sort`
 do
-  echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-m//;s/.cnf//"):Y:N
+  if [[ "${conf}" =~ my.cnf ]];then
+    echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my.cnf/3306/"):Y:N
+  else
+    echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-m//;s/.cnf//"):Y:N
+  fi
 done > ${mysql_conf_dir}/vfatab
 
-rm -f /etc/vfatab
-ln -s ${mysql_conf_dir}/vfatab /etc/vfatab
-
-if [ -e /etc/init.d/mysql ];then
-  if [ -h /etc/init.d/mysql ];then
-    rm -f /etc/init.d/mysql
-  else
-    mv /etc/init.d/mysql /etc/init.d/mysql.old
-  fi
+if [ "${mysql_conf_dir}" != "/etc" ];then
+  rm -f /etc/vfatab
+  ln -s ${mysql_conf_dir}/vfatab /etc/vfatab
 fi
-
-if [ -e /etc/init.d/mysqld ];then
-  if [ -h /etc/init.d/mysqld ];then
-    rm -f /etc/init.d/mysqld
-  else
-    mv /etc/init.d/mysqld /etc/init.d/mysqld.old
-  fi
-fi
-
-ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysql
-ln -s /usr/local/palominodb/scripts/mysqld /etc/init.d/mysqld
 
 # Check for bashrc and add dba alias if it doesn't already exist
 
