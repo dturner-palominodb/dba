@@ -297,6 +297,37 @@ function show_innodb_status {
 
 }
 
+function show_table_size {
+
+    if [ -z $1 ];then
+      table_schema="%"
+      table_name="%"
+
+      cmd="select concat(table_schema,'.',table_name,':',data_length + index_length,':',data_length,':',index_length) as table_info
+           from information_schema.tables where table_schema like \"${table_schema}\" and table_name like \"${table_name}\"
+           order by data_length+index_length"
+      mysql --socket=$(get_socket $default_inst_port) -sNe "$cmd"
+      return 0
+
+    else
+      if [ -z $2 ];then
+        table_schema="%"
+        table_name="%"
+      else
+        if [[ $2 =~ "." ]];then
+        table_schema=`echo $2 | cut -d. -f1`
+        table_name=`echo $2 | cut -d. -f2`
+        fi
+      fi
+    fi
+    cmd="select concat(table_schema,'.',table_name,':',data_length + index_length,':',data_length,':',index_length) as table_info
+         from information_schema.tables where table_schema like \"${table_schema}\" and table_name like \"${table_name}\"
+         order by data_length+index_length"
+    mysql --socket=$(get_socket $1) -sNe "$cmd"
+
+}
+
+
 function skip_slave {
   if [ -z $1 ];then
     conn $default_inst_port "SET GLOBAL SQL_SLAVE_SKIP_COUNTER=1; START SLAVE"
