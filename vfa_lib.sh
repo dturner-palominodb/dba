@@ -288,6 +288,15 @@ function show_full_processlist {
 
 }
 
+function show_innodb_status {
+    if [ -z $1 ];then
+      conn $default_inst_port "show engine innodb status\G"
+    else
+      conn $1 "show engine innodb status\G"
+    fi
+
+}
+
 function skip_slave {
   if [ -z $1 ];then
     conn $default_inst_port "SET GLOBAL SQL_SLAVE_SKIP_COUNTER=1; START SLAVE"
