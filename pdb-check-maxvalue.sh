@@ -5,7 +5,7 @@
 #          reached N pct of the maximum value for that type of integer.
 #
 # repo: https://github.com/dturner-palominodb/dba
-# 
+#
 #       To download just this file do the following:
 #       wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/pdb-check-maxvalue.sh
 #
@@ -13,7 +13,7 @@
 #                   config file  : many options would be good to have as options in a config file
 #
 #                   store history: the values returned tell us a lot about the growth rate of certain columns.
-# 
+#
 #                   exlusion list: there will be some columns that clients don't care about.
 #
 #                   integrate with nagios: we need all clients informed when max values will be reached for their columns
@@ -21,33 +21,73 @@
 
 
 
+
 vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
 
-if [ -z $1 ];then
-  echo "Error: usage $0 <PCT_ALLOWED> <PORT>"
-  echo "       ie: $0 60 3307               "
-  exit 1
-else
- pct_allowed=`echo $1 | sed s/%//g`
- port=$2
 
+lagcheck=1
+begin=1
+pk=""
+while getopts ":s:p:b:klh" opt ; do
+
+  case $opt in
+    s)
+      pct_allowed=`echo $OPTARG | sed s/%//g`;;
+    p)
+      port=$OPTARG;;
+    b)
+      begin=$OPTARG;;
+    k)
+      pk="and extra like 'auto_increment'";;
+    l)
+      lagcheck=0;;
+    h)
+      echo "Usage:"
+      echo "-s <pct_allowed> -p <port> -b <first statement - default 0> -k <if set, will check only pk - if not set, will check all - default> -l <if set, disable lag check>"
+      exit 1;;
+    *)
+      echo "try -h"
+      exit;;
+
+  esac
+done
+if [ -z $pct_allowed ] ; then
+  echo "Usage:"
+  echo "-s <pct_allowed> -p <port> -b <first statement - default 0> -k <if set, will check only pk - if not set, will check all - default>"
+  exit 1;
 fi
+
+#if [ -z $1 ];then
+#  echo "Error: usage $0 <PCT_ALLOWED> <PORT> <FIRST_STATEMENT - default 0> <pk - optional, if you want to check only PK's - default, no>"
+#  echo "       ie: $0 60 3307 10 (pk)             "
+#  exit 1
+#else
+# pct_allowed=`echo $1 | sed s/%//g`
+# port=$2
+# begin=${3:-1} # 1 - because array starts from 0 and we want to exclude first line
+# if [ -z $4 ] ; then pk="" ; else pk="and extra like 'auto_increment'" ; fi
+
+
+#fi
+
 
 if [ -e ${vfa_lib_file} ];then
   source ${vfa_lib_file} ''
   socket_info="--socket=$(get_socket ${port:=3306})"
 else
-  socket_info=""  
+  socket_info=""
 fi
+
 
 sql_file="pdb-check-maxvalue.sql"
 # The generated statements
 proc_file="pdb-check-maxvalue.proc"
 
+
 cat > ${sql_file} <<EOF
-select 
+select
   concat('select CONCAT_WS('':'',''',
-  table_schema,'.',table_name,'.',column_name,
+  col.table_schema,'.',table_name,'.',column_name,
   ''', ',
   'round(ifnull(max(\`', column_name, '\`),0) / ',
   (CASE
@@ -75,7 +115,7 @@ select
     ELSE
       'failed'
   END),
-  ' * 100 )', 
+  ' * 100 )',
   ', round(ifnull(max(\`', column_name, '\`),0)),',
   (CASE
       1
@@ -103,7 +143,7 @@ select
       'failed'
   END),
   ') as INFO ',
-  'from \`', table_schema, '\`.\`', table_name, '\` '
+  'from \`', col.table_schema, '\`.\`', table_name, '\` '
   'having round(ifnull(max(\`', column_name, '\`),0) / ',
   (CASE
       1
@@ -131,22 +171,72 @@ select
       'failed'
   END),
   ' * 100) > ${pct_allowed} ',
-  ';')
-from 
-  information_schema.columns 
-where 
+  ';') AS a
+from
+  information_schema.columns col
+left join
+  information_schema.views
+using(TABLE_NAME)
+where VIEW_DEFINITION is NULL
+and
   # data_type in ('tinyint')
   data_type in ('tinyint','smallint','mediumint','int','integer','bigint')
+${pk}
 and
-  table_schema not in ('VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
-  # table_schema not in ('mysql','information_schema','VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
+#  table_schema not in ('VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
+ col.table_schema not in ('mysql','information_schema','VALUE WILL BE AN OPTION IN FUTURE VERSION. HARD CODE IF NECESSARY');
+
 
 EOF
 
-mysql -sN ${socket_info} < ${sql_file} > ${proc_file}
+
+mysql ${socket_info}  < ${sql_file} > ${proc_file}
+
 
 # For debugging
 # cat ${proc_file}
 
-mysql -sN ${socket_info} < ${proc_file}  |sort -t: -nk2
 
+function check_sbm {
+
+  sbm=`mysql ${socket_info} -e "show slave status\G" | grep Seconds | awk '{print $2}'`
+
+  if [ ! -n $sbm ] && [ ${sbm} -gt 10 ] ; then
+    echo -en "Replication is lagging by ${sbm} seconds, waiting...\r"
+    sleep 5;
+    check_sbm
+  fi
+
+}
+
+
+old_IFS=$IFS
+
+
+IFS=$'\n'
+
+
+line=($(cat ${proc_file}))
+
+
+IFS=$old_IFS
+
+
+size=${#line[@]}
+
+
+counter=$begin
+
+
+while [ $counter -lt $size ] ; do
+        if [ $lagcheck -eq 1 ] ; then
+          check_sbm
+        fi
+        echo -en "Progress $counter/$size\r"
+
+        echo "${line[$counter]}" | mysql ${socket_info} | sort -t: -nk2
+        ret="${PIPESTATUS[0]}${PIPESTATUS[1]}${PIPESTATUS[2]}"
+        if [ "${ret}" != "000" ]
+                then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
+        counter=$(($counter+1))
+done
