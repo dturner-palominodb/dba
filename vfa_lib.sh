@@ -336,6 +336,23 @@ function skip_slave {
   fi
 }
 
+function relax_durability {
+
+  cmd="set global sync_binlog=0; set global innodb_flush_log_at_trx_commit=0"
+
+  if [ -z $1 ];then
+    port=${default_inst_port}
+  else
+    port=$1
+  fi
+  echo "Durability prior to relaxing."
+  echo $(show_global_variables ${port} |egrep -w "sync_binlog|innodb_flush_log_at_trx_commit")
+  conn ${port} "$cmd"
+  echo "Durability after relaxing."
+  echo $(show_global_variables ${port} |egrep -w "sync_binlog|innodb_flush_log_at_trx_commit")
+}
+
+
 function show_slaves {
   stmt="show processlist"
   filter="grep | bleh"
@@ -442,10 +459,11 @@ function show_datadir {
 
 function show_error_log {
   if [ -z $1 ];then
-    show_global_variables $default_inst_port |grep log_err |awk '{print $2}'
+    port=${default_inst_port}
   else
-    show_global_variables $1 |grep log_err |awk '{print $2}'
+    port=$1
   fi
+  show_global_variables ${port} |grep log_err |awk '{print $2}'
 }
 
 alias show_errorlog="show_error_log"
