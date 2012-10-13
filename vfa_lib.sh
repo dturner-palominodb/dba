@@ -270,6 +270,69 @@ function show_slave_status {
 } 
 alias v_s3=show_slave_status
 
+function show_slave_status_ddl {
+
+    stmt="show slave status\G"
+
+    if [ -z $1 ];then
+      port=${default_inst_port}
+    else
+      port=${1}
+    fi
+
+    result=`conn $port "${stmt}" | egrep -i "master_host:|master_port:|relay_master_log_file:|exec_master_log_pos:" |sed "s/.*: //"`
+    # pdb01 3306 pdb01-bin-log.001171 532729146
+
+    inst_host=`echo $result | awk '{print $1}'`
+    inst_port=`echo $result | awk '{print $2}'`
+    master_log_file=`echo $result | awk '{print $3}'`
+    master_log_pos=`echo $result | awk '{print $4}'`
+
+
+    echo "CHANGE MASTER TO"
+    echo "MASTER_HOST=\"${inst_host}\","
+    echo "MASTER_PORT=${inst_port},"
+    echo "MASTER_LOG_FILE=\"${master_log_file}\","
+    echo "MASTER_LOG_POS=${master_log_pos}"
+    echo ";"
+
+}
+
+function show_master_status_ddl {
+
+    stmt="show master status\G"
+
+    # This part needs to be rewritten to handle host:port as well as just port
+    if [ -z $1 ];then
+      port=${default_inst_port}
+    else
+      port=${1}
+    fi
+
+    # client specific for now
+    result=$(echo `hostname |cut -d"." -f1` `conn $port "${stmt}" | egrep -i "file:|position:" |sed "s/.*: //"`)
+    # pdb pdb18-bin-log.000410 460843416
+
+
+    inst_host=`echo $result | awk '{print $1}'`
+    inst_port=${port}
+    master_log_file=`echo $result | awk '{print $2}'`
+    master_log_pos=`echo $result | awk '{print $3}'`
+
+    # echo "inst_host=$inst_host"
+    # echo "inst_port=$inst_port"
+    # echo "master_log_file=$master_log_file"
+    # echo "master_log_pos=$master_log_pos"
+
+    echo "CHANGE MASTER TO"
+    echo "MASTER_HOST=\"${inst_host}\","
+    echo "MASTER_PORT=${inst_port},"
+    echo "MASTER_LOG_FILE=\"${master_log_file}\","
+    echo "MASTER_LOG_POS=${master_log_pos}"
+    echo ";"
+
+}
+
 function show_processlist {
     if [ -z $1 ];then
       conn $default_inst_port "show processlist"
