@@ -351,6 +351,18 @@ function show_full_processlist {
 
 }
 
+function show_active_processlist {
+
+  if [ -z $1 ];then
+    port=${default_inst_port}
+  else
+    port=$1
+  fi
+
+  show_full_processlist ${port} |grep -iv sleep |sort -nk6
+
+}
+
 function show_innodb_status {
     if [ -z $1 ];then
       conn $default_inst_port "show engine innodb status\G"
