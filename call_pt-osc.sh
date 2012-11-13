@@ -14,6 +14,8 @@
 #         modify `current_tags` varchar(2047) DEFAULT NULL,
 #         modify `position` int(11) DEFAULT NULL
 #
+#      Create .call_pt-osc with schema_filter=theschema
+#
 #
 
 if [ -z $1 ];then
@@ -38,7 +40,11 @@ fi
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ${port}
 
-schema_filter="theschema"
+if [ -e .call_pt-osc ];then
+  source .call_pt-osc
+else
+  schema_filter="theschema"
+fi
 
 schema_list=`mysql ${socket} -sNe 'show databases' |grep ${schema_filter}`
 
