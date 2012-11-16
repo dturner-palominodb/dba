@@ -538,7 +538,10 @@ function show_error_log {
   else
     port=$1
   fi
-  show_global_variables ${port} |grep log_err |awk '{print $2}'
+  show_global_variables ${port} 2> /dev/null |grep log_err |awk '{print $2}'
+  if [ ${PIPESTATUS[1]} -gt 0 ];then
+    egrep "^log-error" `show_my_cnf $port` |awk -F= '{print $2}'
+  fi
 }
 
 alias show_errorlog="show_error_log"
