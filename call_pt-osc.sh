@@ -17,6 +17,11 @@
 #      Create .call_pt-osc with schema_filter=theschema
 #
 #
+#       The script can be told to sleep with a sleep file.
+#       IE: touch /tmp/call_pt-osc.sleep
+#       And worst case use /tmp/call_pt-osc.stop to tell
+#       the script to exit.
+#
 
 if [ -z $1 ];then
   echo "Error: usage call_pt-osc.sh [modification_date] [port]"
@@ -40,6 +45,9 @@ fi
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ${port}
 
+sleep_file=/tmp/call_pt-osc.sleep
+stop_file=/tmp/call_pt-osc.stop
+
 if [ -e .call_pt-osc ];then
   source .call_pt-osc
 else
@@ -61,11 +69,12 @@ logfile="/tmp/call_pt-osc.log"
 for file in $(ls ${modification_dir}/alter*.sql)
 # for file in $(ls call_pt-osc.file*.${modification_date})
 do
+  
   table=`head -1 ${file}`
   stmt=`tail -n +2 ${file}`  
   echo "table=$table"
   # if no schema_list check the files for the schemas
-  if [ -z ${schema_list} ];then
+  if [ -z "${schema_list}" ];then
      if [[ $table =~ "." ]];then
        schema_list=`echo $table |cut -d. -f1`
        table=`echo $table |cut -d. -f2`
@@ -74,12 +83,24 @@ do
        exit 1
      fi
   else
+    echo "${schema_list}"
     echo "${schema_list}" | wc -l
-    echo "schema_list=>${schema_list}<"
   fi
     
   for schema in ${schema_list}
   do
+    if [ -e ${stop_file} ];then
+      echo "Stop file ${stop_file} found. Exiting."
+      exit 0
+    fi
+
+    while [ -e ${sleep_file} ]
+    do
+      echo "Sleep file ${sleep_file} found."
+      echo "Sleeping 60s."
+      sleep 60
+    done
+    
     echo "schema=$schema"
     echo "time pt-online-schema-change -u root --alter \"${stmt}\" --execute D=${schema},t=${table}${dsn_socket}"
     time pt-online-schema-change -u root --alter "${stmt}" --execute D=${schema},t=${table}${dsn_socket}
@@ -87,3 +108,16 @@ do
   done
 
 done 2>&1 | tee $logfile
+
+if [ `grep -i error ${logfile} | wc -l` -gt 0 ];then
+  echo 
+  echo "========================="
+  echo "Error found in ${logfile}"
+  grep -i error ${logfile}
+  echo "========================="
+else
+  echo 
+  echo "========================="
+  echo "Completed without Error."
+  echo "========================="
+fi
