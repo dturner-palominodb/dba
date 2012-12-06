@@ -3,6 +3,10 @@
 tarball_dir=/tmp/perf_tarball
 date=`date +"%Y%m%d%H%M%S"`
 tarball_file=perf_tarball_${date}.tgz
+perf_dest_dir="/tmp"
+
+# Removing previous versions of perf_tarball.
+rm -vf ${perf_dest_dir}/perf_tarball_[0-9][0-9]*.tgz
 
 mkdir -p /tmp/perf_tarball 2> /dev/null
 
@@ -30,4 +34,5 @@ cp vfa_lib.sh                      ${tarball_dir}
 
 cd /tmp
 tar czvf ${tarball_file} perf_tarball
+echo ${tarball_file} 
 
