@@ -102,8 +102,8 @@ do
     done
     
     echo "schema=$schema"
-    echo "time pt-online-schema-change -u root --alter \"${stmt}\" --execute D=${schema},t=${table}${dsn_socket}"
-    time pt-online-schema-change -u root --alter "${stmt}" --execute D=${schema},t=${table}${dsn_socket}
+    echo "time pt-online-schema-change -u root --critical-load=Threads_Running=150 --alter \"${stmt}\" --execute D=${schema},t=${table}${dsn_socket}"
+    time pt-online-schema-change -u root --critical-load=Threads_Running=150 --alter "${stmt}" --execute D=${schema},t=${table}${dsn_socket}
     # break
   done
 
