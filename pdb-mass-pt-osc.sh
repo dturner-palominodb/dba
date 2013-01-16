@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Purpose:
-# Perform online schema change locally on a
-# given instance.
+# Perform online schema change using pt-osc on all tables
+# that aren't referenced by a foreign key. 
 
 # Other:
 #       You can pause the script by using 
