@@ -7,10 +7,14 @@
 # note: The script was written in haste and needs the hard coding removed and other cleanup.
 #
 
+logfile=pdb-manage-relay-logs.log
+
 slave_status=`echo $(mysql -e 'show slave status\G' |egrep -i "runn|sec")|awk '{print $2 "," $4 "," $6}'`
 sbm=`echo $slave_status | cut -d, -f3`
 
 pct_disk_used=`df -Ph |tail -n +2 |grep sda2|awk '{print $5}' |sed "s/%//"`
+
+exec > >(tee -a $logfile) 2>&1
 
 echo slave_status=$slave_status
 echo pct_disk_used=$pct_disk_used
