@@ -18,7 +18,9 @@
 #
 #                   integrate with nagios: we need all clients informed when max values will be reached for their columns
 #
-
+# Notes: consider an option to exclude columns without indexes
+#        Mark's suggested limiting to just pks. 
+#
 
 
 
@@ -28,7 +30,7 @@ vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
 lagcheck=1
 begin=1
 pk=""
-while getopts ":s:p:b:klh" opt ; do
+while getopts ":s:p:b:i:klh" opt ; do
 
   case $opt in
     s)
@@ -37,6 +39,8 @@ while getopts ":s:p:b:klh" opt ; do
       port=$OPTARG;;
     b)
       begin=$OPTARG;;
+    i)
+      inst=$OPTARG;;
     k)
       pk="and extra like 'auto_increment'";;
     l)
@@ -53,8 +57,23 @@ while getopts ":s:p:b:klh" opt ; do
 done
 if [ -z $pct_allowed ] ; then
   echo "Usage:"
-  echo "-s <pct_allowed> -p <port> -b <first statement - default 0> -k <if set, will check only pk - if not set, will check all - default>"
+  echo "-s <pct_allowed> -i <host:port> -p <port> -b <first statement - default 0> -k <if set, will check only pk - if not set, will check all - default>"
   exit 1;
+fi
+
+if [ ! -z ${inst} ];then
+  if [[ $inst =~ :33[0-9][0-9] ]];then
+    inst_host=`echo ${inst}|cut -d: -f1`
+    inst_port=`echo ${inst}|cut -d: -f2`
+  else
+    if [ ! -z $port ];then
+      inst_host=${inst}
+      inst_port=${port}
+    else
+      inst_host=${inst}
+      inst_port=3306
+    fi
+  fi
 fi
 
 #if [ -z $1 ];then
@@ -74,8 +93,14 @@ fi
 if [ -e ${vfa_lib_file} ];then
   source ${vfa_lib_file} ''
   socket_info="--socket=$(get_socket ${port:=3306})"
+  mysql_command="mysql ${socket_info}"
 else
-  socket_info=""
+  if [ -z ${inst} ];then
+    socket_info=""
+    mysql_command="mysql ${socket_info}"
+  else
+    mysql_command="mysql -h $inst_host -P $inst_port"
+  fi
 fi
 
 
@@ -190,8 +215,8 @@ and
 EOF
 
 
-mysql ${socket_info}  < ${sql_file} > ${proc_file}
 
+${mysql_command}  < ${sql_file} > ${proc_file}
 
 # For debugging
 # cat ${proc_file}
@@ -199,7 +224,7 @@ mysql ${socket_info}  < ${sql_file} > ${proc_file}
 
 function check_sbm {
 
-  sbm=`mysql ${socket_info} -e "show slave status\G" | grep Seconds | awk '{print $2}'`
+  sbm=`${mysql_command} -e "show slave status\G" | grep Seconds | awk '{print $2}'`
 
   if [ ! -n $sbm ] && [ ${sbm} -gt 10 ] ; then
     echo -en "Replication is lagging by ${sbm} seconds, waiting...\r"
@@ -234,7 +259,7 @@ while [ $counter -lt $size ] ; do
         fi
         echo -en "Progress $counter/$size\r"
 
-        echo "${line[$counter]}" | mysql ${socket_info} | sort -t: -nk2
+        echo "${line[$counter]}" | ${mysql_command} | sort -t: -nk2
         ret="${PIPESTATUS[0]}${PIPESTATUS[1]}${PIPESTATUS[2]}"
         if [ "${ret}" != "000" ]
                 then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
