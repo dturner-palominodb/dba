@@ -12,7 +12,10 @@ import os
 import re
 import subprocess
 import sys
+import warnings 
 import MySQLdb
+warnings.simplefilter("error", MySQLdb.Warning)
+# http://python.6.n6.nabble.com/Trapping-warnings-from-MySQLdb-td1735661.html
 from os.path import expanduser
 from ConfigParser import SafeConfigParser
 
@@ -82,7 +85,12 @@ def run_select(host='localhost', port=3306, user='root', password='', stmt=''):
     conn = conn_db(host, int(port), user, password, 'mysql')
 
     cursor = conn.cursor()  
-    cursor.execute(stmt)
+   
+    try:
+        cursor.execute(stmt)
+    except MySQLdb.Warning, e:
+        # For now return nothing if there is a warning.
+        return 
 
     result = cursor.fetchall()
 
@@ -91,6 +99,49 @@ def run_select(host='localhost', port=3306, user='root', password='', stmt=''):
 
     return result
 
+def show_slave_status(host='localhost', port=3306, user='root', password=''):
+    cmd = "show slave status"
+    result = run_select(host,port,user,password,cmd)
+    return result
+
+def show_master_status(host='localhost', port=3306, user='root', password=''):
+    # example usage
+    # for row in result:
+    #     print "%s,%s,%s,%s" % (row[0],row[1],row[2],row[3])
+    #
+    cmd = "show master status"
+    result = run_select(host,port,user,password,cmd)
+    return result
+
+
+
+def stop_slave(host='localhost', port=3306, user='root', password=''):
+    # todo:
+    #      o add a check to confirm io_thread and sql_thread have been stopped
+    #        or that replication hasn't been setup. 
+    #      o find out how to timeout when the stop slave command hangs.
+    #
+    cmd = "stop slave"
+    result = run_select(host,port,user,password,cmd)
+
+    if not result:
+        return 1
+    # DEBUG - this needs to be tested with a db that's slaving.
+    return result
+
+def set_read_only(host='localhost', port=3306, user='root', password=''):
+    cmd = "set global read_only=1"
+    result = run_select(host,port,user,password,cmd)
+    cmd = "show global variables like 'read_only'"
+    result = run_select(host,port,user,password,cmd)
+
+    for row in result:
+       if row[1] == "ON":
+           return 1
+       else:
+           return 0
+
+    
 
 def get_vfa_cnf_file():
 
