@@ -36,6 +36,7 @@ from pdb_dba import *
 #    o compare start and end slave 
 #    o compare start and end master 
 # Addtional features
+#    o Add exit codes with useful numbers(Work with Emanuel)
 #    o Better logging/handling of failures
 #    o Read user and pass from defaults-file
 #    o Accept user and pass on command line
