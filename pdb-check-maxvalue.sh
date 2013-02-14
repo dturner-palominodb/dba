@@ -30,7 +30,7 @@ vfa_lib_file="/usr/local/palominodb/scripts/vfa_lib.sh"
 lagcheck=1
 begin=1
 pk=""
-while getopts ":s:p:b:i:klh" opt ; do
+while getopts ":s:p:b:i:klmh" opt ; do
 
   case $opt in
     s)
@@ -45,6 +45,8 @@ while getopts ":s:p:b:i:klh" opt ; do
       pk="and extra like 'auto_increment'";;
     l)
       lagcheck=0;;
+    m)
+      multi=1;; # we'll be launching multiple instances of this scipt, we need random filenames to do so
     h)
       echo "Usage:"
       echo "-s <pct_allowed> -p <port> -b <first statement - default 0> -k <if set, will check only pk - if not set, will check all - default> -l <if set, disable lag check>"
@@ -104,9 +106,22 @@ else
 fi
 
 
-sql_file="pdb-check-maxvalue.sql"
-# The generated statements
-proc_file="pdb-check-maxvalue.proc"
+function gen_random_filename {
+  rand=${RANDOM}
+  sql_file="pdb-check-maxvalue${rand}.sql"
+  proc_file="pdb-check-maxvalue${rand}.proc"
+  if [ -e ${sql_file} ] ; then gen_random_filename ; fi
+  if [ -e ${proc_file} ] ; then gen_random_filename ; fi
+
+}
+
+if (( multi == 1 )) ; then
+  gen_random_filename
+else
+  sql_file="pdb-check-maxvalue.sql"
+  # The generated statements
+  proc_file="pdb-check-maxvalue.proc"
+fi
 
 
 cat > ${sql_file} <<EOF
@@ -265,3 +280,8 @@ while [ $counter -lt $size ] ; do
                 then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
         counter=$(($counter+1))
 done
+
+#clean after work
+  if [ -e ${sql_file} ] ; then rm -f ${sql_file} ; fi
+  if [ -e ${proc_file} ] ; then rm -f ${proc_file} ; fi
+
