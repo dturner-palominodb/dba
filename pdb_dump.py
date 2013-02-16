@@ -35,7 +35,11 @@ from pdb_dba import *
 #    x store ending master posiition.
 #    o compare start and end slave 
 #    o compare start and end master 
+#    o start slave at end option
+#    o may want to add an option to take it back out of read_only mode
+#    o If you keep using checksums_tbl then allow schema used to be passed as an arg
 # Addtional features
+#    o How do we deal with weird table names, spaces, etc?
 #    o Confirm all pt tools are installed before running. This could save some headache
 #    o Add exit codes with useful numbers(Work with Emanuel)
 #    o Better logging/handling of failures
@@ -50,8 +54,8 @@ from pdb_dba import *
 
 
 # Globals
-mysql_user="root"
-mysql_pass=""
+# mysql_user="root"
+# mysql_pass=""
 unix_user = "mysql"
 
 # Example : ./pdb_dump.py --instance=localhost -b /tmp/dump  -p 3
@@ -72,12 +76,17 @@ def parse():
                       action="store", 
                       dest="backup_dir",
                       default=False,
-                      help="The directory to dump to.",)
+                      help="The directory to dump to.")
+    parser.add_option("-d", "--defaults-file",
+                      action="store", 
+                      dest="defaults_file",
+                      default=False,
+                      help="The file to read username and password from.")
     parser.add_option("-p", "--parallelism",
                       action="store", 
                       dest="parallelism",
                       default=2,
-                      help="The number of dump processes to run in parallel.",)
+                      help="The number of dump processes to run in parallel.")
     (options, args) = parser.parse_args()
 
 
@@ -113,7 +122,7 @@ def create_backup_dirs_for_dbs(db_list, unix_user, backup_dir):
         else:
             print "Warning: " + backup_dir_for_db + " exists."
 
-def get_table_list(inst_host, inst_port, db_list):
+def get_table_list(inst_host, inst_port, mysql_user, mysql_pass, db_list):
 
     table_list = []
 
@@ -125,6 +134,30 @@ def get_table_list(inst_host, inst_port, db_list):
 
     return table_list
 
+# may want to move this to pdb_dba.py and rewrite to use threads.
+def checksum_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup_dir, parallelism):
+    # Still need to figure out how to thread this and then write multiple threads to a file
+    checksum_list = []
+
+    for table in table_list:
+        db = table.split(".")[0]
+        table_name = table.split(".")[1]
+
+        stmt = "checksum table " + db + "." + table_name
+        result = run_select(inst_host, int(inst_port), mysql_user, mysql_pass, stmt)
+        for row in result:
+            checksum_list.append(row[0] + "," + str(row[1]))
+            # print row[0] + "." + str(row[1])
+
+    checksum_list.sort()
+
+    checksums_file = backup_dir + "/" + "checksums_at_dump.txt"
+    fo = open(checksums_file,'w')
+    for checksum in checksum_list:
+        fo.write(checksum + '\n')
+    fo.close
+
+
 def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup_dir, parallelism):
 
     socket = get_socket(inst_port)
@@ -135,7 +168,8 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
         table_name = table.split(".")[1]
 
         # DEBUG this needs to handle passwords.
-        cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + get_socket(inst_port) + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+        cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + socket + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+        # cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + get_socket(inst_port) + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
 
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         return_code = proc.wait()
@@ -158,7 +192,8 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
         table_name = table.split(".")[1]
       
         ps = {}
-        args = ['mysqldump', '-h', inst_host,'-u', mysql_user, '--socket', get_socket(inst_port), '-q', '-Q', '-e', '--order-by-primary', '--no-create-info','-r', backup_dir + "/" + db + "/" + table_name + ".txt", db, table_name]
+        args = ['mysqldump', '-h', inst_host,'-u', mysql_user, '--socket', socket, '-q', '-Q', '-e', '--order-by-primary', '--no-create-info','--tab', backup_dir + "/" + db, db, table_name]
+        # args = ['mysqldump', '-h', inst_host,'-u', mysql_user, '--socket', socket, '-q', '-Q', '-e', '--order-by-primary', '--no-create-info','-r', backup_dir + "/" + db + "/" + table_name + ".txt", db, table_name]
         p = subprocess.Popen(args)
         ps[p.pid] = p
         print ps
@@ -174,6 +209,14 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
                     print "Waiting for %d processes..." % len(ps)
                 else:
                     parallel_count = 0
+
+    # Do this until you get a better method of handling threads
+    while ps:
+        print "Waiting on last dump processes to complete"
+        pid, status = os.wait()
+        if pid in ps:
+            del ps[pid]
+            print "Waiting for %d processes..." % len(ps)
 
 def call_pt_show_grants(inst_host, inst_port, mysql_user, mysql_pass, backup_dir):
     # When you have time make sure this works with ports as well as sockets.
@@ -194,7 +237,17 @@ def call_pt_show_grants(inst_host, inst_port, mysql_user, mysql_pass, backup_dir
         print line.rstrip()
     for line in proc.stderr:
         print ("stderr: " + line.rstrip())
-     
+
+def get_mysql_user_and_pass(options):
+    
+    if options.defaults_file:
+        if os.path.exists(options.defaults_file):
+            (mysql_user,mysql_pass) = get_mysql_user_and_pass_from_my_cnf(options.defaults_file)
+    else:
+        mysql_user='root'
+        mysql_pass=''
+
+    return (mysql_user, mysql_pass)
 
 def main():
     (options, args) = parse()
@@ -206,6 +259,8 @@ def main():
     backup_dir = options.backup_dir
     parallelism = options.parallelism
     program_name_stripped = os.path.basename(__file__).split(".")[0]
+
+    (mysql_user, mysql_pass) = get_mysql_user_and_pass(options)
 
     log_file = backup_dir + "/" + program_name_stripped + ".log"
 
@@ -219,17 +274,20 @@ def main():
         sys.exit(1)
 
     # set read_only
-    if set_read_only(host='localhost', port=3306, user='root', password='') == 1:
-        print "Instance is in read_only mode."
+    if set_read_only(host=inst_host, port=inst_port, user=mysql_user, password=mysql_pass) == 1:
+        print "Instance has been set to read_only mode."
     else:
         print "Error: problem enabling read_only."
         sys.exit(1)
 
     # flush logs
+    flush_logs(host=inst_host, port=inst_port, user=mysql_user, password=mysql_pass)
 
     # stop replication - needs to return 1 or 0
     stop_slave(inst_host, inst_port, mysql_user, mysql_pass)
 
+    # print "DEBUG"
+    # sys.exit(0)
     # store master status
     master_status_start_file = backup_dir + "/" + "master_status_start.txt"
     fo = open(master_status_start_file,'w')
@@ -306,7 +364,11 @@ def main():
 
     print inst_host + ":" + inst_port
  
-    table_list = get_table_list(inst_host, inst_port, db_list)
+    table_list = get_table_list(inst_host, inst_port, mysql_user, mysql_pass, db_list)
+
+    # Write the checksums to a file for later comparison.
+    checksum_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup_dir, parallelism)
+
     # At some point need to support views, triggers, etc. Possibly just let user preimport empty schema objects to handle that. And may want to take a logical
     # dump just in case.
     dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup_dir, parallelism)
