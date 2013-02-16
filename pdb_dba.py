@@ -141,6 +141,9 @@ def set_read_only(host='localhost', port=3306, user='root', password=''):
        else:
            return 0
 
+def flush_logs(host='localhost', port=3306, user='root', password=''):
+    cmd = "flush logs"
+    result = run_select(host,port,user,password,cmd)
     
 
 def get_vfa_cnf_file():
@@ -191,6 +194,27 @@ def get_socket(port):
     parser.read(my_cnf_file)
 
     return parser.get('mysqld', 'socket')
+
+def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
+
+    try:
+        fr = open(my_cnf_file, "r")
+    except IOError:
+        # I do not think it should return and error. It
+        # should just return nothing for the password.
+        return
+
+    while 1:
+        line = fr.readline()
+        if not line:
+            break
+        line = line.strip().replace('"','')
+        if re.match("^user",line):
+            mysql_user = line.split("=")[1]
+        if re.match("^password",line):
+            mysql_pass = line.split("=")[1]
+
+    return (mysql_user,mysql_pass)
 
 
 def is_production_server(server):
