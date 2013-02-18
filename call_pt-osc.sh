@@ -1,4 +1,7 @@
 #!/bin/bash
+# author: dturner@palominodb.com
+# 
+# repo : wget --no-check-certificate https://raw.github.com/dturner-palominodb/dba/master/call_pt-osc.sh
 # Must be run locally
 # Notes:
 #      mkdir 20120101_call_pt-osc
