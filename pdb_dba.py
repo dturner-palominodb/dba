@@ -47,7 +47,6 @@ def is_mysql_running(port=3306):
         return line.rstrip()
 
 def test_conn(user, password, inst='localhost:3306'):
-    # return 1 if connect succeeds.
     try:
         result = inst.index(':')
     except:
@@ -60,16 +59,18 @@ def test_conn(user, password, inst='localhost:3306'):
       inst_host=inst
       inst_port='3306'
 
+    # Will need to have conditional for remote instances
     try:
-        MySQLdb.connect(host=inst_host, port=int(inst_port), user=user, passwd=password, db='')
-        return 1
-    except MySQLdb.Error, e:
+        print "MySQLdb.connect(host=inst_host, unix_socket=" + get_socket(int(inst_port)) + ", user=" + user + ", passwd=password, db='')"
+        MySQLdb.connect(host=inst_host, unix_socket=get_socket(int(inst_port)), user=user, passwd=password, db='')
         return 0
+    except MySQLdb.Error, e:
+        return 1
         
 
 def conn_db(host, port, user, password, db):
     try:
-        return MySQLdb.connect(host=host, port=port, user=user, passwd=password, db=db)
+        return MySQLdb.connect(host=host, unix_socket=get_socket(int(port)), user=user, passwd=password, db='')
     except MySQLdb.Error, e:
         sys.stderr.write("[ERROR] %d: %s\n" % (e.args[0], e.args[1]))
         return False
@@ -176,58 +177,22 @@ def get_my_cnf_file(port):
         if not line:
             break
         if re.match('^.*:' + str(port) + ':',line):
-            my_cnf_file = line.split(":")[0]
-        else:
-            return
-
-    return my_cnf_file
+            return line.split(":")[0]
+    return 
 
 def get_socket(port):
     
     my_cnf_file = get_my_cnf_file(port)
 
-    # Need conditional for when my_cnf_file can't be found 
-    # For reference: http://www.doughellmann.com/PyMOTW/ConfigParser/
-    parser = SafeConfigParser()
-    
-    # Check if we're running on Python >= 2.7. If yes, fine.
-    if (( sys.version_info[0] == 2 and sys.version_info[1] >= 7 ) or ( sys.version_info[0] >= 3)):
-        parser = SafeConfigParser(allow_no_value=True)
-        parser.read(my_cnf_file)
+    cmd='egrep -i "\[mysqld\]|socket" ' + my_cnf_file + ' | grep -A1 "\[mysqld\]"|tail -1' + " | awk -F'=' \'{print $2}\' |sed 's/ //g'" 
+    # cmd='egrep -i "mysqld|socket" /etc/mysql/my-m3306.cnf |grep -A1 "\[mysqld\]"|tail -1 |awk -F"=" ''{print $2}'''
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    return_code = proc.wait()
 
-        return parser.get('mysqld', 'socket')
-    else: # If we're not using >=2.7, we can't use allow_no_value=True and we need to parse my.cnf manually.
-#        m = re.search('socket\s*=\s*(.*)$', line) # looking for socket = something
-        for line in open(my_cnf_file,'r').readlines():
-            m = re.search('socket\s*=\s*(.*)$', line)
-            if (m):
-                out = m.group(1) # put the last value of socket entry (there can be more than one in my.cnf)
-        
-        if (out):
-            return out
+    for line in proc.stdout:
+        return line.rstrip()
 
-            
-
-def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
-
-    try:
-        fr = open(my_cnf_file, "r")
-    except IOError:
-        # I do not think it should return and error. It
-        # should just return nothing for the password.
-        return
-
-    while 1:
-        line = fr.readline()
-        if not line:
-            break
-        line = line.strip().replace('"','')
-        if re.match("^user",line):
-            mysql_user = line.split("=")[1]
-        if re.match("^password",line):
-            mysql_pass = line.split("=")[1]
-
-    return (mysql_user,mysql_pass)
+    return
 
 def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
 

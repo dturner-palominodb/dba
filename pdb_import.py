@@ -12,6 +12,7 @@ from pwd import getpwnam
 from pdb_dba import *
 #
 # Addtional features
+#   !!!! put in a safe guard so it doesn't run against a production db !!!!
 #    o Confirm all pt tools are installed before running. This could save some headache
 #    o Add exit codes with useful numbers(Work with Emanuel)
 #    o Better logging/handling of failures
@@ -225,7 +226,7 @@ def main():
 
     # check the start and end files
 
-    if test_conn(mysql_user, mysql_pass, inst) < 1:
+    if test_conn(mysql_user, mysql_pass, inst) == 1:
         print "Error: unable to connect to the instance. Check to confirm that it is available."
         sys.exit(1)
 

@@ -269,7 +269,7 @@ def main():
         os.makedirs(backup_dir)
         os.chown(backup_dir, getpwnam(unix_user).pw_uid, pwd.getpwnam(unix_user).pw_gid)
 
-    if test_conn(mysql_user, mysql_pass, inst) < 1:
+    if test_conn(mysql_user, mysql_pass, inst) == 1:
         print "Error: unable to connect to the instance. Check to confirm that it is available."
         sys.exit(1)
 
@@ -307,47 +307,33 @@ def main():
     result = show_slave_status(inst_host, inst_port, mysql_user, mysql_pass)
     # This may be prone to errors. Take some time later to examine values that may come back as ints or null. May want to cast all to str to avoid
     # wasting time.
+
+    #1   Master_Host: 192.168.100.52
+    #2   Master_User: repli
+    #3   Master_Port: 3310
+    #9   Relay_Master_Log_File: binlog.000067
+    #12  Replicate_Do_DB: wordpress
+    #13  Replicate_Ignore_DB: mysql,test,netscaler
+    #14  Replicate_Do_Table: 
+    #15  Replicate_Ignore_Table: 
+    #16  Replicate_Wild_Do_Table: 
+    #17  Replicate_Wild_Ignore_Table: 
+    #21  Exec_Master_Log_Pos: 837831386
+
     for row in result:
         pass
         fo.write(
-            row[0] + ',' +
             row[1] + ',' +
             row[2] + ',' +
             str(row[3]) + ',' +
-            str(row[4]) + ',' +
-            row[5] + ',' +
-            str(row[6]) + ',' +
-            row[7] + ',' +
-            str(row[8]) + ',' +
             row[9] + ',' +
-            row[10] + ',' +
-            row[11] + ',' +
             row[12] + ',' +
             row[13] + ',' +
             row[14] + ',' +
             row[15] + ',' +
             row[16] + ',' +
             row[17] + ',' +
-            str(row[18]) + ',' +
-            row[19] + ',' +
-            str(row[20]) + ',' +
-            str(row[21]) + ',' +
-            str(row[22]) + ',' +
-            row[23] + ',' +
-            row[24] + ',' +
-            str(row[25]) + ',' +
-            row[26] + ',' +
-            row[27] + ',' +
-            row[28] + ',' +
-            row[29] + ',' +
-            row[30] + ',' +
-            row[31] + ',' +
-            str(row[32]) + ',' +
-            row[33] + ',' +
-            str(row[34]) + ',' +
-            row[35] + ',' +
-            str(row[36]) + ',' +
-            row[37] +
+            str(row[21])  +
             '\n'
                 )
     fo.close
@@ -393,47 +379,33 @@ def main():
     result = show_slave_status(inst_host, inst_port, mysql_user, mysql_pass)
     # This may be prone to errors. Take some time later to examine values that may come back as ints or null. May want to cast all to str to avoid
     # wasting time.
+
+    #1   Master_Host: 192.168.100.52
+    #2   Master_User: repli
+    #3   Master_Port: 3310
+    #9   Relay_Master_Log_File: binlog.000067
+    #12  Replicate_Do_DB: wordpress
+    #13  Replicate_Ignore_DB: mysql,test,netscaler
+    #14  Replicate_Do_Table:
+    #15  Replicate_Ignore_Table:
+    #16  Replicate_Wild_Do_Table:
+    #17  Replicate_Wild_Ignore_Table:
+    #21  Exec_Master_Log_Pos: 837831386
+
     for row in result:
         pass
         fo.write(
-            row[0] + ',' +
             row[1] + ',' +
             row[2] + ',' +
             str(row[3]) + ',' +
-            str(row[4]) + ',' +
-            row[5] + ',' +
-            str(row[6]) + ',' +
-            row[7] + ',' +
-            str(row[8]) + ',' +
             row[9] + ',' +
-            row[10] + ',' +
-            row[11] + ',' +
             row[12] + ',' +
             row[13] + ',' +
             row[14] + ',' +
             row[15] + ',' +
             row[16] + ',' +
             row[17] + ',' +
-            str(row[18]) + ',' +
-            row[19] + ',' +
-            str(row[20]) + ',' +
-            str(row[21]) + ',' +
-            str(row[22]) + ',' +
-            row[23] + ',' +
-            row[24] + ',' +
-            str(row[25]) + ',' +
-            row[26] + ',' +
-            row[27] + ',' +
-            row[28] + ',' +
-            row[29] + ',' +
-            row[30] + ',' +
-            row[31] + ',' +
-            str(row[32]) + ',' +
-            row[33] + ',' +
-            str(row[34]) + ',' +
-            row[35] + ',' +
-            str(row[36]) + ',' +
-            row[37] +
+            str(row[21])  +
             '\n'
                 )
     fo.close
