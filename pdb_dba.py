@@ -141,6 +141,9 @@ def set_read_only(host='localhost', port=3306, user='root', password=''):
        else:
            return 0
 
+def flush_logs(host='localhost', port=3306, user='root', password=''):
+    cmd = "flush logs"
+    result = run_select(host,port,user,password,cmd)
     
 
 def get_vfa_cnf_file():
@@ -186,11 +189,45 @@ def get_socket(port):
     # Need conditional for when my_cnf_file can't be found 
     # For reference: http://www.doughellmann.com/PyMOTW/ConfigParser/
     parser = SafeConfigParser()
+    
+    # Check if we're running on Python >= 2.7. If yes, fine.
+    if (( sys.version_info[0] == 2 and sys.version_info[1] >= 7 ) or ( sys.version_info[0] >= 3)):
+        parser = SafeConfigParser(allow_no_value=True)
+        parser.read(my_cnf_file)
 
-    parser = SafeConfigParser(allow_no_value=True)
-    parser.read(my_cnf_file)
+        return parser.get('mysqld', 'socket')
+    else: # If we're not using >=2.7, we can't use allow_no_value=True and we need to parse my.cnf manually.
+#        m = re.search('socket\s*=\s*(.*)$', line) # looking for socket = something
+        for line in open(my_cnf_file,'r').readlines():
+            m = re.search('socket\s*=\s*(.*)$', line)
+            if (m):
+                out = m.group(1) # put the last value of socket entry (there can be more than one in my.cnf)
+        
+        if (out):
+            return out
 
-    return parser.get('mysqld', 'socket')
+            
+
+def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
+
+    try:
+        fr = open(my_cnf_file, "r")
+    except IOError:
+        # I do not think it should return and error. It
+        # should just return nothing for the password.
+        return
+
+    while 1:
+        line = fr.readline()
+        if not line:
+            break
+        line = line.strip().replace('"','')
+        if re.match("^user",line):
+            mysql_user = line.split("=")[1]
+        if re.match("^password",line):
+            mysql_pass = line.split("=")[1]
+
+    return (mysql_user,mysql_pass)
 
 
 def is_production_server(server):
