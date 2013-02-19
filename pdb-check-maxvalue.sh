@@ -272,13 +272,24 @@ while [ $counter -lt $size ] ; do
         if [ $lagcheck -eq 1 ] ; then
           check_sbm
         fi
-        echo -en "Progress $counter/$size\r"
 
-        echo "${line[$counter]}" | ${mysql_command} | sort -t: -nk2
-        ret="${PIPESTATUS[0]}${PIPESTATUS[1]}${PIPESTATUS[2]}"
-        if [ "${ret}" != "000" ]
-                then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
-        counter=$(($counter+1))
+        if ((multi != 1)) ; then
+            echo -en "Progress $counter/$size\r"
+
+            echo "${line[$counter]}" | ${mysql_command} | sort -t: -nk2
+            ret="${PIPESTATUS[0]}${PIPESTATUS[1]}${PIPESTATUS[2]}"
+            if [ "${ret}" != "000" ]
+                    then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
+            counter=$(($counter+1))
+        else
+            echo  "Progress $counter/$size"
+            echo "${line[$counter]}" | ${mysql_command} | sort -t: -nk2
+            ret="${PIPESTATUS[0]}${PIPESTATUS[1]}${PIPESTATUS[2]}"
+            if [ "${ret}" != "000" ]
+                    then echo -e "problem on $((counter+1)) line of ${proc_file}:\n ${line[$counter]}" ; exit 1; fi
+            counter=$(($counter+1))
+        fi
+
 done
 
 #clean after work
