@@ -61,8 +61,7 @@ def test_conn(user, password, inst='localhost:3306'):
 
     # Will need to have conditional for remote instances
     try:
-        print "MySQLdb.connect(host=inst_host, unix_socket=" + get_socket(int(inst_port)) + ", user=" + user + ", passwd=password, db='')"
-        MySQLdb.connect(host=inst_host, unix_socket=get_socket(int(inst_port)), user=user, passwd=password, db='')
+        conn(inst_host, inst_port, user, password, '')
         return 0
     except MySQLdb.Error, e:
         return 1

@@ -109,7 +109,7 @@ def create_tables(inst_host, inst_port, mysql_user, mysql_pass, table_file_list,
         table_name = table_file.split("/")[-1].split(".")[-2]
 
         cmd = "mysql --ignore --force -h " + inst_host + " -u " + mysql_user + " --socket=" + socket + " " + db + " < " + table_file
-        print cmd
+        # print cmd
 
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         return_code = proc.wait()
@@ -136,8 +136,8 @@ def checksum_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, ba
         result = run_select(inst_host, int(inst_port), mysql_user, mysql_pass, stmt)
         for row in result:
             checksum_list.append(row[0] + "," + str(row[1]))
-            print "DEBUG"
-            print row[0] + "." + str(row[1])
+            # print "DEBUG"
+            # print row[0] + "." + str(row[1])
 
     checksum_list.sort()
 

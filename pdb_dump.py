@@ -168,8 +168,17 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
         table_name = table.split(".")[1]
 
         # DEBUG this needs to handle passwords.
-        cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + socket + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
-        # cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + get_socket(inst_port) + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+        if re.match('^localhost', inst_host):
+            if mysql_pass:
+                cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " -p" + mysql_pass + " --socket=" + socket + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+            else:
+                cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --socket=" + socket + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+
+        else:
+            if mysql_pass:
+                cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " -p" + mysql_pass + " --port=" + inst_port + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
+            else:
+                cmd = "mysqldump -h " + inst_host + " -u " + mysql_user + " --port=" + inst_port + " -q -Q -e --no-data " +  db + " " + table_name + " > " + backup_dir + "/" + db + "/" + table_name + ".sql"
 
         proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         return_code = proc.wait()
@@ -192,9 +201,19 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
         table_name = table.split(".")[1]
       
         ps = {}
-        args = ['mysqldump', '-h', inst_host,'-u', mysql_user, '--socket', socket, '-q', '-Q', '-e', '--order-by-primary', '--no-create-info','--tab', backup_dir + "/" + db, db, table_name]
-        # args = ['mysqldump', '-h', inst_host,'-u', mysql_user, '--socket', socket, '-q', '-Q', '-e', '--order-by-primary', '--no-create-info','-r', backup_dir + "/" + db + "/" + table_name + ".txt", db, table_name]
-        p = subprocess.Popen(args)
+
+        if re.match('^localhost', inst_host):
+            if mysql_pass:
+                cmd='mysqldump -h ' + inst_host + ' -u ' +  mysql_user +  ' -p' + mysql_pass + ' --socket=' + socket + ' -q -Q -e --order-by-primary --no-create-info --tab ' + backup_dir + '/' + db + ' ' + db + ' ' + table_name
+            else:
+                cmd='mysqldump -h ' + inst_host + ' -u ' +  mysql_user +  ' --socket=' + socket + ' -q -Q -e --order-by-primary --no-create-info --tab ' + backup_dir + '/' + db + ' ' + db + ' ' + table_name
+        else:
+            if mysql_pass:
+                cmd='mysqldump -h ' + inst_host + ' -u ' +  mysql_user +  ' -p' + mysql_pass + ' --port=' + inst_port + ' -q -Q -e --order-by-primary --no-create-info --tab ' + backup_dir + '/' + db + ' ' + db + ' ' + table_name
+            else:
+                cmd='mysqldump -h ' + inst_host + ' -u ' +  mysql_user + ' --port=' + inst_port + ' -q -Q -e --order-by-primary --no-create-info --tab ' + backup_dir + '/' + db + ' ' + db + ' ' + table_name
+    
+        p = subprocess.Popen(cmd, shell=True)
         ps[p.pid] = p
         print ps
     
@@ -221,8 +240,16 @@ def dump_tables(inst_host, inst_port, mysql_user, mysql_pass, table_list, backup
 def call_pt_show_grants(inst_host, inst_port, mysql_user, mysql_pass, backup_dir):
     # When you have time make sure this works with ports as well as sockets.
     # Get this handling blank passwords
-    cmd = "pt-show-grants -h " + inst_host + " -u " + mysql_user + " --socket=" + get_socket(inst_port) + " > " + backup_dir + "/" + "pt_show_grants.sql"
-   
+    if re.match('^localhost', inst_host):
+        if mysql_pass:
+            cmd = "pt-show-grants -h " + inst_host + " -u " + mysql_user + " -p " + mysql_pass + " --socket=" + get_socket(inst_port) + " > " + backup_dir + "/" + "pt_show_grants.sql"
+        else:
+            cmd = "pt-show-grants -h " + inst_host + " -u " + mysql_user + " --socket=" + get_socket(inst_port) + " > " + backup_dir + "/" + "pt_show_grants.sql"
+    else:
+        if mysql_pass:
+            cmd = "pt-show-grants -h " + inst_host + " -u " + mysql_user + " -p " + mysql_pass + " --port=" + inst_port + " > " + backup_dir + "/" + "pt_show_grants.sql"
+        else: 
+            cmd = "pt-show-grants -h " + inst_host + " -u " + mysql_user + " --port=" + inst_port + " > " + backup_dir + "/" + "pt_show_grants.sql"
     print cmd  
 
     proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
