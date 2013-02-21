@@ -66,7 +66,18 @@ def test_conn(user, password, inst='localhost:3306'):
         return 0
     except MySQLdb.Error, e:
         return 1
-        
+
+# A replacement for conn_db    
+def conn(host, port, user, password, db):
+    try:
+        if re.match('^localhost', host):
+            return MySQLdb.connect(host=host, unix_socket=get_socket(int(port)), user=user, passwd=password, db='')
+        else:
+            return MySQLdb.connect(host=host, port=int(port), user=user, passwd=password, db='')
+
+    except MySQLdb.Error, e:
+        sys.stderr.write("[ERROR] %d: %s\n" % (e.args[0], e.args[1]))
+        return False
 
 def conn_db(host, port, user, password, db):
     try:
@@ -83,9 +94,11 @@ def run_select(host='localhost', port=3306, user='root', password='', stmt=''):
     #     print row[0]
     #
 
-    conn = conn_db(host, int(port), user, password, 'mysql')
+    db = conn(host, int(port), user, password, 'mysql')
+    # dturner
+    # conn = conn_db(host, int(port), user, password, 'mysql')
 
-    cursor = conn.cursor()  
+    cursor = db.cursor()  
    
     try:
         cursor.execute(stmt)
@@ -96,7 +109,7 @@ def run_select(host='localhost', port=3306, user='root', password='', stmt=''):
     result = cursor.fetchall()
 
     cursor.close
-    conn.close
+    db.close
 
     return result
 
@@ -114,8 +127,6 @@ def show_master_status(host='localhost', port=3306, user='root', password=''):
     result = run_select(host,port,user,password,cmd)
     return result
 
-
-
 def stop_slave(host='localhost', port=3306, user='root', password=''):
     # todo:
     #      o add a check to confirm io_thread and sql_thread have been stopped
@@ -130,8 +141,8 @@ def stop_slave(host='localhost', port=3306, user='root', password=''):
     # DEBUG - this needs to be tested with a db that's slaving.
     return result
 
-def set_read_only(host='localhost', port=3306, user='root', password=''):
-    cmd = "set global read_only=1"
+def set_read_only(host='localhost', port=3306, user='root', password='', setting=1):
+    cmd = "set global read_only=" + str(setting)
     result = run_select(host,port,user,password,cmd)
     cmd = "show global variables like 'read_only'"
     result = run_select(host,port,user,password,cmd)
@@ -141,6 +152,15 @@ def set_read_only(host='localhost', port=3306, user='root', password=''):
            return 1
        else:
            return 0
+
+def set_variable(variable, value, host='localhost', port=3306, user='root', password=''):
+    cmd = "set global " + variable + "=" + str(value)
+    result = run_select(host,port,user,password,cmd)
+    cmd = "show global variables like '" + variable + "'"
+    result = run_select(host,port,user,password,cmd)
+
+    for row in result:
+           return row[1]
 
 def flush_logs(host='localhost', port=3306, user='root', password=''):
     cmd = "flush logs"
@@ -215,6 +235,21 @@ def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
 
     return (mysql_user,mysql_pass)
 
+
+def parse_inst_info(inst):
+    try:
+        result = inst.index(':')
+    except:
+        result = 0
+
+    if result > 0:
+      inst_host=inst.split(':')[0]
+      inst_port=inst.split(':')[1]
+    else:
+      inst_host=inst
+      inst_port='3306'
+
+    return (inst_host, inst_port)
 
 def is_production_server(server):
     pass
