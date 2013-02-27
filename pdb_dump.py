@@ -16,6 +16,9 @@ from pdb_dba import *
 # juan - leader
 # mike - student
 #
+# Example of calling the script:
+# ./pdb_dump.py -i localhost:3306 -b /data02/backup --defaults-file=/root/.my.cnf
+#
 #
 # Loading table
 # time mysql -e 'insert into shard01.voice_calls select * from shard03.voice_calls; insert into shard03.voice_calls select * from shard01.voice_calls '
