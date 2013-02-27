@@ -11,14 +11,16 @@ import grp, pwd
 from pwd import getpwnam
 from pdb_dba import *
 # specify individually, comma separated.
-# start writing the unix utilities in python to get experience
-# chip - helped with globals
-# juan - leader
-# mike - student
 #
 # Example of calling the script:
 # ./pdb_dump.py -i localhost:3306 -b /data02/backup --defaults-file=/root/.my.cnf
 #
+# Expected timings:
+#
+# This was on a system with relatively poor performing drives. Need to get numbers for PIOPS  
+# Dump of 384 G took 8 hours
+# Import of 280 G took 12 hours
+# 
 #
 # Loading table
 # time mysql -e 'insert into shard01.voice_calls select * from shard03.voice_calls; insert into shard03.voice_calls select * from shard01.voice_calls '
