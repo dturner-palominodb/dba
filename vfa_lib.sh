@@ -800,3 +800,43 @@ function conn {
 
 }
 
+
+# Modify this to work with multiple sockets
+# check if a database is not production
+# Be sure to check for 0, not false. Both
+# false and 1 could mean it is production if
+# the check should somehow fail.
+# Example call of function
+# is_prod
+#
+# if [ $? -eq 0 ];then
+#   echo "not production"
+# else
+#   echo "is production. Exiting."
+#   exit 1
+# fi
+function is_prod() {
+
+  production_flag=1
+
+  other_dir_count=`find /var/lib/mysql -mindepth 1 -type d  |egrep -v "/var/lib/mysql/mysql|/var/lib/mysql/test" |wc -l`
+
+  if [ "${other_dir_count}" -gt 0 ];then
+    find /var/lib/mysql -mindepth 1 -type d  |grep -v "/var/lib/mysql/mysql"
+    production_flag=2
+    return $production_flag
+
+  fi
+
+  mysql_state=`pgrep mysqld | wc -l`
+
+  if [ ${mysql_state} -gt 0 ];then
+    production_flag=3
+    return $production_flag
+
+  fi
+
+  production_flag=0
+  return $production_flag
+
+}
