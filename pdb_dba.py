@@ -44,8 +44,8 @@ def is_mysqld_running(port=3306, silent=False):
 
     for line in proc.stdout:
         if silent == False:
-            print line.rstrip()
-        return line.rstrip()
+            print int(line.rstrip())
+        return int(line.rstrip())
 
 def test_conn(user, password, inst='localhost:3306'):
     try:
