@@ -33,7 +33,7 @@ def local_exec(cmd):
 
     return return_code
 
-def is_mysql_running(port=3306):
+def is_mysqld_running(port=3306, silent=False):
     # This should be just the start of what to check. Checking connectivity
     # would be something else to check as well. Port info isn't available via
     # ps consistenly so I'm not sure how useful that is anymore.
@@ -43,7 +43,8 @@ def is_mysql_running(port=3306):
     return_code = proc.wait()
 
     for line in proc.stdout:
-        print line.rstrip()
+        if silent == False:
+            print line.rstrip()
         return line.rstrip()
 
 def test_conn(user, password, inst='localhost:3306'):
@@ -61,7 +62,8 @@ def test_conn(user, password, inst='localhost:3306'):
 
     # Will need to have conditional for remote instances
     try:
-        conn(inst_host, inst_port, user, password, '')
+        print "MySQLdb.connect(host=inst_host, unix_socket=" + get_socket(int(inst_port)) + ", user=" + user + ", passwd=password, db='')"
+        MySQLdb.connect(host=inst_host, unix_socket=get_socket(int(inst_port)), user=user, passwd=password, db='')
         return 0
     except MySQLdb.Error, e:
         return 1
@@ -181,7 +183,7 @@ def get_vfa_cnf_file():
         
     return vfa_cnf_file
 
-def get_my_cnf_file(port):
+def get_my_cnf_file(port=3306):
     vfa_cnf_file = get_vfa_cnf_file()
 
     try:
@@ -198,6 +200,19 @@ def get_my_cnf_file(port):
         if re.match('^.*:' + str(port) + ':',line):
             return line.split(":")[0]
     return 
+
+def get_my_cnf_parm(port=3306, section="mysqld",var=""):
+
+    my_cnf_file = get_my_cnf_file(port)
+
+    cmd='egrep -i "\[' + section + '\]|^' + var + '" ' + my_cnf_file + ' | grep -A1 "\[' + section +'\]"|tail -1' + " | awk -F'=' \'{print $2}\' |sed 's/ //g'"
+    proc = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    return_code = proc.wait()
+
+    for line in proc.stdout:
+        return line.rstrip()
+
+    return
 
 def get_socket(port):
     
@@ -233,6 +248,38 @@ def get_mysql_user_and_pass_from_my_cnf(my_cnf_file):
             mysql_pass = line.split("=")[1]
 
     return (mysql_user,mysql_pass)
+
+
+# take what could be non standard instance definitiion
+# and return 3 cleanly formated variables ready for consumption
+def return_inst_info(inst=False):
+    inst = inst.lower()
+
+    if inst == False:
+        inst = 'localhost:3306'
+        inst_host = 'localhost'
+        inst_port = 3306
+
+        return (inst, inst_host, inst_port)
+
+    inst_parsed = inst.split(":")
+    inst_parsed_len = len(inst_parsed)
+
+    if inst_parsed_len < 3:
+        if inst_parsed_len < 2:
+            inst_host=inst_parsed[0]
+            inst_port=3306
+            inst="%s:%d" % (inst_host, inst_port)
+        else:
+            inst_host=inst_parsed[0]
+            inst_port=int(inst_parsed[1])
+            inst="%s:%d" % (inst_host, inst_port)
+    else:
+        # DEBUG raise exception here.
+        print "Error: parsing problem with inst."
+        return
+
+    return (inst, inst_host, inst_port)
 
 
 def parse_inst_info(inst):
