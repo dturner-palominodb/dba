@@ -21,4 +21,5 @@ else
   echo "Size of /var/lib/mysql = $result"
 fi
 
+# Need a check for fio devices
 
