@@ -52,7 +52,7 @@ minimum_mb_table=0
 # The maximum size of table to reorg. Any large than
 # N MB should be reorged with percona's online schema change
 # script
-maximum_mb_table=100000
+maximum_mb_table=1000000
 
 source /usr/local/palominodb/scripts/vfa_lib.sh ''
 
