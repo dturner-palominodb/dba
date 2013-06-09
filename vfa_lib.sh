@@ -234,6 +234,18 @@ function loud_exec {
   VFA_LIB_SILENT=0
 }
 
+function show_databases {
+
+    stmt="show databases"
+
+    if [ -z $1 ];then
+      conn $default_inst_port "${stmt}"
+    else
+      conn $1                 "${stmt}"
+    fi
+
+}
+
 function show_db_size {
     if [ -z $1 ];then
       conn $default_inst_port "select round(sum(data_length)/1024/1024) as data_mb, round(sum(index_length)/1024/1024) as index_mb, \
