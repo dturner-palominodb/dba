@@ -1,6 +1,7 @@
 #!/bin/bash
 # filename:  pdb_get_ddl_info.sh
 # purpose: return global status for com_alter_table and com_create_table
+#          in a format cacti will use.
 # author : dturner@palominodb.com
 # source :
 

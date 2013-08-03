@@ -3,6 +3,27 @@
 # of each at the end.
 #
 
+echo "* Checking for full mount point"
+result=`df -h |egrep "100%"`
+if [ ! -z "$result" ];then
+  echo 'Warning mount point full.       <===================='
+  echo "$result"
+else
+  echo "OK"
+fi
+echo
+
+echo "* Checking load"
+result=`uptime |awk '{print $10}' |sed "s/,//"`
+echo "Load is ${result}"
+echo
+
+echo "* Checking MySQL uptime"
+result=`mysql -sNe 'show global status' |grep -wi uptime |awk '{print $2 "/60"}'  |bc`
+echo "MySQL uptime ${result} min"
+echo
+
+
 result=`grep "allocsize=1M" /etc/fstab|wc -l`
 
 if [ $result -gt 0 ];then
