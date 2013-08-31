@@ -32,11 +32,24 @@ else
 fi
 
 # Had to have awk convert the float returned from mysql to an int
-long_query_time_before=`mysql -sNe 'show global variables like "long_query_time"' |awk '{printf "%.0f",$2}'`
+long_query_time_before=`mysql -sNe 'show global variables like "long_query_time"' |awk '{printf "%3.3f",$2}'`
+# DEBUG comment out after
 # echo long_query_time_before=$long_query_time_before
 
+echo "Flushing logs."
+mysql -e 'flush logs'
+echo
+echo "Cp'ing slow query log file"
+echo "cp ${slow_query_log_file} ${slow_query_log_file}_${start_date}"
+cp ${slow_query_log_file} ${slow_query_log_file}_${start_date}
+echo "Clearing the slow log for easier review."
+echo "> ${slow_query_log_file}"
+> ${slow_query_log_file}
+echo
+
 # Set long query time = 0
-long_query_time_after=`mysql -sNe 'set global long_query_time=0;show global variables like "long_query_time"' |awk '{printf "%.0f",$2}'`
+long_query_time_after=`mysql -sNe 'set global long_query_time=0;show global variables like "long_query_time"' |awk '{printf "%3.3f",$2}'`
+# DEBUG
 # echo long_query_time_after=$long_query_time_after
 
 sleep_time_in_seconds=$(( $minutes * 60 ))
@@ -59,16 +72,37 @@ do
   count=$(( $count + 1 ))
 done
 
-long_query_time_final=`mysql -sNe "set global long_query_time=${long_query_time_before};show global variables like 'long_query_time'" |awk '{printf "%.0f",$2}'`
-# echo long_query_time_final=$long_query_time_final
+long_query_time_final=`mysql -sNe "set global long_query_time=${long_query_time_before};show global variables like 'long_query_time'" |awk '{printf "%3.3f",$2}'`
+echo long_query_time_final=$long_query_time_final
 
 echo "The script has completed. Long_query_time has been set back to long_query_time=${long_query_time_final}."
 echo
+end_date=`date +"%Y%m%d%H%M%S"`
+sample_slow_log="${slow_query_log_file}_${minutes}min_sample_${end_date}"
+mysql -e 'flush logs'
+echo
+echo "Creating file slow query log file for analysis."
+echo "cp ${slow_query_log_file} ${sample_slow_log}"
+cp ${slow_query_log_file} ${sample_slow_log}
+echo "Final clearing of the slow log for space."
+echo "> ${slow_query_log_file}"
+> ${slow_query_log_file}
+echo
 
-slow_query_log_file_size=`du -hs ${slow_query_log_file}`
+sample_slow_log_size=`du -ks ${sample_slow_log} |awk '{print $1}'`
 
-echo "The slow query log, $slow_query_log_file, is now ${slow_query_log_file_size}."
+echo "The sample slow query log, ${sample_slow_log}, is now ${sample_slow_log_size}."
+
+
+# calculate growth rate of slow log
+
+growth_rate=$(echo "scale=3; (${sample_slow_log_size} / ${sleep_time_in_seconds}) / 1024" | bc )
+
+echo "The slow log grew at approximately ${growth_rate}M/s"
+
 
 end_unixtime=`date +"%s"`
 
-echo "End unix time = $end_unixtime"
+echo "End unixtime = ${end_unixtime}"
+
+
