@@ -50,7 +50,7 @@ do
   if [[ "${conf}" =~ my.cnf ]];then
     echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my.cnf/3306/"):Y:N
   else
-    echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-m//;s/.cnf//"):Y:N
+    echo $conf:$(echo $conf |awk -F"/" '{print $NF}'|sed "s/my-//;s/my-m//;s/.cnf//"):Y:N
   fi
 done > ${mysql_conf_dir}/vfatab
 
